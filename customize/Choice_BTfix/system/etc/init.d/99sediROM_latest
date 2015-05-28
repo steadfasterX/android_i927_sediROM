@@ -1,0 +1,42 @@
+#!/system/bin/sh
+############################################################
+# This script is part of sediROM
+#
+# Copyright (c) 2015 by Thomas Fischer, www.se-di.de
+# v1.0
+############################################################
+
+echo "sediROM: starting $0" >> /dev/kmsg
+
+# path where the config and log will be saved
+SEDIDIR=/sdcard/.sediROM/
+WRKDIR=$SEDIDIR/init
+LOG=$WRKDIR/${0##*/}.log
+
+echo "$(date) sediROM: starting $0" > $LOG
+
+# setup work dir
+[ ! -d $WRKDIR ] && mkdir -p $WRKDIR
+
+##############################################################
+# Remounting READ-ONLY is absolutely important >
+#
+# check if we need to remount
+RWCNT=$(grep /system /proc/mounts |grep -c "rw[ ,]")
+if [ $RWCNT -ne 0 ];then
+    echo "$(date): /system is read-writable! This will be fixed now." >> $LOG
+    mount -oremount,ro /system 2>&1 >> $LOG
+    if [ $? -eq 0 ];then
+        echo "$(date): Remounted read-only with success." >> $LOG
+    else
+        echo "$(date): Error while remounting read-only. I try it 1 more time.." >> $LOG
+        mount -oremount,ro /system 2>&1 >> $LOG
+    fi
+else
+    echo "/system already read-only. good." >> $LOG
+fi
+# < END: Remounting READ-ONLY
+##############################################################
+
+echo "sediROM: $0 finished." >> $LOG
+echo "sediROM: $0 finished." >> /dev/kmsg

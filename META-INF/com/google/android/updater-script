@@ -1,0 +1,1092 @@
+ui_print("@");
+ui_print("@  sediROM");
+ui_print("@");
+show_progress(0.0, 0);
+
+unmount("/system");
+unmount("/data");
+unmount("/cache");
+unmount("/preload");
+
+ui_print("@  [*] Preparing setup...");
+package_extract_dir("setup", "/tmp");
+set_perm_recursive(0, 0, 0755, 0755, "/tmp");
+
+# Unfortunately assert does not work as expected. If I use it the script still go on further even when mount is failing
+# So I do it that much more complicated but WORKING way: 
+
+ui_print("@  [*] Partly Mounting Partitions...");
+if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p6", "/data") != "0"
+	then
+		ui_print("@  [*] ... mounting /data partition failed");
+		ui_print("@      --> well that alone is not a problem");
+		#abort()
+	else
+		ui_print("@      ... sucessfully mounted /data partition");
+endif;
+
+### The full and recommended wipe
+if
+	  file_getprop("/tmp/aroma/wipe.prop","selected.1") == "1"
+then
+	  ui_print("@  [*] Performing Full Wipe...");
+		ui_print("@  [**] /system partition will be formatted..");
+			if run_program("/tmp/sedi_mke2fs", "-m2", "-T", "ext4", "/dev/block/mmcblk0p2") != "0"
+			then
+				ui_print("@      ERROR wiping /system partition! ABORTED!");
+				abort();
+			else
+				ui_print("@      ... sucessfully wiped /system");
+				run_program("/tmp/sedi_tune2fs", "-c60", "-i0", "/dev/block/mmcblk0p2");
+				ui_print("@      ... tuned /system");				
+				# ensure mount point exists.. No error when exists:
+				run_program("/sbin/busybox", "mkdir", "-p", "/system");
+				if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p2", "/system") != "0"
+					then
+						ui_print("@      ERROR mounting /system partition!");
+						abort()
+					else
+						ui_print("@      ... sucessfully mounted /system partition");
+				endif;
+			endif;
+
+	ui_print("@  [**] /cache partition will be formatted now..");
+	if run_program("/tmp/sedi_mke2fs", "-m1", "-T", "ext4", "/dev/block/mmcblk0p3") != "0"
+		then
+			ui_print("@      ERROR wiping /cache partition! ABORTED!");
+			abort();
+	    else
+			ui_print("@      ... sucessfully wiped /cache");
+			run_program("/tmp/sedi_tune2fs", "-c0", "-i0", "/dev/block/mmcblk0p2");
+			ui_print("@      ... tuned /cache");				
+			# ensure mount point exists.. No error when exists:
+			run_program("/sbin/busybox", "mkdir", "-p", "/cache");
+			if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p3", "/cache") != "0"
+				then
+					ui_print("@      ERROR mounting /cache partition!");
+					abort()
+				else
+					ui_print("@      ... sucessfully mounted /cache partition");
+			endif;
+	endif;
+
+	ui_print("@  [**] /data partition will be formatted now..");
+	unmount("/data");
+	if run_program("/tmp/sedi_mke2fs", "-m2", "-T", "ext4", "/dev/block/mmcblk0p6") != "0"
+		then
+				ui_print("@      ERROR wiping /data partition! ABORTED!");
+				abort();
+		else
+				ui_print("@      ... sucessfully wiped /data");
+				run_program("/tmp/sedi_tune2fs", "-c80", "-i0", "/dev/block/mmcblk0p6");
+				ui_print("@      ... tuned /data");				
+				# ensure mount point exists.. No error when exists:
+				run_program("/sbin/busybox", "mkdir", "-p", "/data");
+				if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p6", "/data") != "0"
+					then
+						ui_print("@      ERROR mounting /data partition!");
+						abort()
+					else
+						ui_print("@      ... sucessfully mounted /data partition");
+				endif;
+	endif;
+
+	  	# introducing preload. format is absolutely recommended so we do so
+		ui_print("@  [**] /preload partition will be formatted..");
+		if run_program("/tmp/sedi_mke2fs", "-m2", "-T", "ext4", "/dev/block/mmcblk0p11") != "0"
+		then
+			ui_print("@      ERROR wiping /preload partition! ABORTED!");
+			abort();
+		else
+			ui_print("@      ... sucessfully wiped /preload");
+			run_program("/tmp/sedi_tune2fs", "-c90", "-i0", "/dev/block/mmcblk0p11");
+			ui_print("@      ... tuned /preload");				
+			# ensure mount point exists.. No error when exists:
+			run_program("/sbin/busybox", "mkdir", "-p", "/preload");
+			if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p11", "/preload") != "0"
+				then
+					ui_print("@      ERROR mounting /preload partition!");
+					abort()
+				else
+					ui_print("@      ... sucessfully mounted /preload partition");
+					ui_print("@  [*] Preparing usage of /preload...");
+					run_program("/sbin/busybox", "mkdir", "-p", "/preload/system/app");
+			endif;
+		endif;
+endif;
+
+
+### NO wipe (cache only)
+if
+	  file_getprop("/tmp/aroma/wipe.prop","selected.1") == "3"
+then
+    ui_print("@  [*] Performing Minimal Wipe:");
+	ui_print("@  [**] /cache partition will be formatted now..");
+	if run_program("/tmp/sedi_mke2fs", "-m1", "-T", "ext4", "/dev/block/mmcblk0p3") != "0"
+		then
+			ui_print("@      ERROR wiping /cache partition! ABORTED!");
+			abort();
+	    else
+			ui_print("@      ... sucessfully wiped /cache");
+			run_program("/tmp/sedi_tune2fs", "-c0", "-i0", "/dev/block/mmcblk0p2");
+			ui_print("@      ... tuned /cache");				
+			# ensure mount point exists.. No error when exists:
+			run_program("/sbin/busybox", "mkdir", "-p", "/cache");
+			if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p3", "/cache") != "0"
+				then
+					ui_print("@      ERROR mounting /cache partition!");
+					abort()
+				else
+					ui_print("@      ... sucessfully mounted /cache partition");
+			endif;
+	endif;
+
+	  if run_program("/sbin/busybox", "ls", "/data/dalvik-cache") == "0"
+	  then
+	  	if run_program("/sbin/busybox", "rm", "-r", "/data/dalvik-cache") != "0"
+		then
+			ui_print("@  [*] ERROR wiping dalvik-cache! ABORTED!");
+			abort();
+		else
+			ui_print("@  [*] ... sucessfully wiped dalvik cache");
+	  	endif;
+	  else
+	  		ui_print("@  [*] ... skipped already deleted dalvik cache!");
+	  endif;
+		# mount system. No error when exists:
+		run_program("/sbin/busybox", "mkdir", "-p", "/system");
+		if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p2", "/system") != "0"
+			then
+				ui_print("@      ERROR mounting /system partition!");
+				abort()
+			else
+				ui_print("@      ... sucessfully mounted /system partition");
+		endif;
+endif;
+
+
+### Partial wipe
+if
+	  file_getprop("/tmp/aroma/wipe.prop","selected.1") == "2"
+then
+    ui_print("@  [*] Performing Partial Wipe:");
+	ui_print("@  [**] /cache partition will be formatted now..");
+	if run_program("/tmp/sedi_mke2fs", "-m1", "-T", "ext4", "/dev/block/mmcblk0p3") != "0"
+		then
+			ui_print("@      ERROR wiping /cache partition! ABORTED!");
+			abort();
+	    else
+			ui_print("@      ... sucessfully wiped /cache");
+			run_program("/tmp/sedi_tune2fs", "-c0", "-i0", "/dev/block/mmcblk0p2");
+			ui_print("@      ... tuned /cache");				
+			# ensure mount point exists.. No error when exists:
+			run_program("/sbin/busybox", "mkdir", "-p", "/cache");
+			if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p3", "/cache") != "0"
+				then
+					ui_print("@      ERROR mounting /cache partition!");
+					abort()
+				else
+					ui_print("@      ... sucessfully mounted /cache partition");
+			endif;
+	endif;
+
+	ui_print("@  [*] ... wiping old system data");
+	ui_print("@  [**] /system partition will be formatted..");
+	if run_program("/tmp/sedi_mke2fs", "-m2", "-T", "ext4", "/dev/block/mmcblk0p2") != "0"
+		then
+			ui_print("@      ERROR wiping /system partition! ABORTED!");
+			abort();
+		else
+			ui_print("@      ... sucessfully wiped /system");
+			run_program("/tmp/sedi_tune2fs", "-c60", "-i0", "/dev/block/mmcblk0p2");
+			ui_print("@      ... tuned /system");				
+			# ensure mount point exists.. No error when exists:
+			run_program("/sbin/busybox", "mkdir", "-p", "/system");
+			if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p2", "/system") != "0"
+				then
+					ui_print("@      ERROR mounting /system partition!");
+					abort()
+				else
+					ui_print("@      ... sucessfully mounted /system partition");
+			endif;
+	endif;
+	
+	if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p11", "/preload") != "0"
+	then
+		ui_print("@  [*] ... mounting /preload partition failed");
+		ui_print("@  [*] Please use the recommended wipe!");
+		abort()
+	else
+		ui_print("@  [*] ... sucessfully mounted /preload partition");
+	endif;  
+	if run_program("/sbin/busybox", "ls", "/preload/system/app") == 0 
+	then
+		if run_program("/sbin/busybox", "rm", "-r", "/preload/system/app") != 0
+		then
+			ui_print("@  [*] ERROR partly-wiping /preload! ABORTED!");
+			abort();
+		else
+			ui_print("@  [*] ... successfully partly-wiped /preload");
+			ui_print("@  [*] Preparing usage of /preload...");
+			run_program("/sbin/busybox", "mkdir", "-p", "/preload/system/app");			
+		endif;
+	else
+			ui_print("@  [*] ... leaving /preload untouched");
+	endif;
+	  if run_program("/sbin/busybox", "ls", "/data/dalvik-cache") == 0
+	  then
+	  	if run_program("/sbin/busybox", "rm", "-r", "/data/dalvik-cache") != 0
+		then
+			ui_print("@  [*] ERROR wiping dalvik-cache! ABORTED!");
+			abort();
+		else
+			ui_print("@  [*] ... sucessfully wiped dalvik cache");
+	  	endif;
+	  else
+	  		ui_print("@  [*] ... skipped already deleted dalvik cache!");
+	  endif;
+endif;
+
+
+set_progress(0.05);
+if
+	  file_getprop("/tmp/aroma/systemcore.prop","item.1.1") == "1"
+	then
+	  ui_print("@  [*] Installing System Core...");
+	  package_extract_dir("system", "/system");  
+	endif;
+set_progress(0.35);
+package_extract_dir("tmp", "/tmp");
+ui_print("@  [*] Installing Apps...");
+ui_print("@");
+
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.1") == "1"
+	then
+	  ui_print("@  Installing Gallery...");
+	  package_extract_dir("customize/Gallery/system", "/system");
+	endif;	
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.2") == "1"
+	then
+	  ui_print("@  Installing Bluetooth Package...");
+	  package_extract_dir("customize/Bluetooth_LiteRom/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.3") == "1"
+	then
+	  ui_print("@  Installing Calculator...");
+	  package_extract_dir("customize/Calculator/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.4") == "1"
+	then
+	  ui_print("@  Installing Calender...");
+	  package_extract_dir("customize/Calender/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.5") == "1"
+	then
+	  ui_print("@  Installing Voice Recorder...");
+	  package_extract_dir("customize/VoiceRecorder/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.6") == "1"
+	then
+	  ui_print("@  Installing ClockPackage...");
+	  package_extract_dir("customize/ClockPackage/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.7") == "1"
+	then
+	  ui_print("@  Installing Email...");
+	  package_extract_dir("customize/Email/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.8") == "1"
+	then
+	  ui_print("@  Installing Gmail...");
+	  package_extract_dir("customize/Gmail/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.9") == "1"
+	then
+	  ui_print("@  Installing LiveWallpaper...");
+	  package_extract_dir("customize/LiveWallpaper/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.10") == "1"
+	then
+	  ui_print("@  Installing Tasks...");
+	  package_extract_dir("customize/Tasks/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.11") == "1"
+	then
+	  ui_print("@  Installing Wallpaper Packages...");
+	  package_extract_dir("customize/Wallpaper/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.12") == "1"
+	then
+	  ui_print("@  Installing Google TTS...");
+	  package_extract_dir("customize/GoogleTTS/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.13") == "1"
+	then
+	  ui_print("@  Installing Memo...");
+	  package_extract_dir("customize/Memo/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.14") == "1"
+	then
+	  ui_print("@  Installing FaceLock...");
+	  package_extract_dir("customize/FaceLock/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.15") == "1"
+	then
+	  ui_print("@  Installing Quick Search Box...");
+	  package_extract_dir("customize/QuickSearchBox/data", "/data");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.16") == "1"
+	then
+	  ui_print("@  Installing Job Manager...");
+	  package_extract_dir("customize/JobManager/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.17") == "1"
+	then
+	  ui_print("@  Installing Socialhub...");
+	  package_extract_dir("customize/Socialhub/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.18") == "1"
+	then
+	  ui_print("@  Installing Accuweather...");
+	  package_extract_dir("customize/Weather/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/apps.prop","item.1.19") == "1"
+	then
+	  ui_print("@  Installing Backup and Restore...");
+	  package_extract_dir("customize/Backup/system", "/system");
+	endif;
+ui_print("@  [*] Installing more Apps...");		
+if
+	  file_getprop("/tmp/aroma/addapps.prop","item.1.1") == "1"
+	then
+	  ui_print("@  Installing ES File Explorer...");
+	  package_extract_dir("customize/ESFileExplorer/data", "/data");
+	endif;
+if
+	  file_getprop("/tmp/aroma/addapps.prop","item.1.2") == "1"
+	then
+	  ui_print("@  Installing Google Chrome...");
+	  package_extract_dir("customize/Browser/Chrome/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/addapps.prop","item.1.3") == "1"
+	then
+	  ui_print("@  Installing Facebook...");
+	  package_extract_dir("customize/Facebook/system", "/system");
+	  package_extract_dir("customize/Facebook/data", "/data");
+	endif;
+if
+	  file_getprop("/tmp/aroma/addapps.prop","item.1.4") == "1"
+	then
+	  ui_print("@  Installing GPS Status...");
+	  package_extract_dir("customize/GPSStatus/data", "/data");
+	endif;
+if
+	  file_getprop("/tmp/aroma/addapps.prop","item.1.5") == "1"
+	then
+	  ui_print("@  Installing Core2 Management...");
+	  package_extract_dir("customize/Core2Management/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/addapps.prop","item.1.6") == "1"
+	then
+	  ui_print("@  Installing Solid Explorer...");
+	  package_extract_dir("customize/SolidExplorer/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/addapps.prop","item.1.7") == "1"
+	then
+	  ui_print("@  Installing Voodoo Sound Control...");
+	  package_extract_dir("customize/VoodooSound/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/addapps.prop","item.1.8") == "1"
+	then
+	  ui_print("@  Installing QuickPic...");
+	  package_extract_dir("customize/QuickPic/system", "/system");
+	endif;
+
+ui_print("@  [*] Installing Features...");	
+
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.1") == "1") || (file_getprop("/tmp/aroma/features.prop","item.1.1") == "1")
+	then
+	  ui_print("@  Installing HD Camera ULTRA...");
+	  package_extract_dir("customize/Choice_Cameras/HDcameraUltra/system", "/system");
+	endif;	
+
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.1") == "2") || (file_getprop("/tmp/aroma/features.prop","item.1.2") == "1")
+	then
+	  ui_print("@  Installing Open Camera...");
+	  package_extract_dir("customize/Choice_Cameras/OpenCamera/system", "/system");
+	endif;	
+
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.1") == "3") || (file_getprop("/tmp/aroma/features.prop","item.1.3") == "1")
+	then
+	  ui_print("@  Installing Stock Camera...");
+	  package_extract_dir("customize/Choice_Cameras/Stock/system", "/system");
+	endif;
+	
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.1") == "4") || (file_getprop("/tmp/aroma/features.prop","item.1.3") == "1")
+	then
+	  ui_print("@  Installing ICS Camera...");
+	  package_extract_dir("customize/Choice_Cameras/ICSCamera/system", "/system");
+	endif;	
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.1") == "5") || (file_getprop("/tmp/aroma/features.prop","item.1.4") == "1")
+	then
+	  ui_print("@  Installing 4.2 Camera...");
+	  package_extract_dir("customize/Choice_Cameras/4.2/system", "/system");
+	endif;	
+	
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.2") == "1") || (file_getprop("/tmp/aroma/features.prop","item.2.1") == "1")
+	then
+	  ui_print("@  Installing Atom Launcher...");
+	  package_extract_dir("customize/Choice_Launchers/Atom/system", "/system");
+	  # 1. this does not work and 2. we need to check if this is an upgrade first:
+  	  #package_extract_dir("customize/Choice_Launchers/Atom/data", "/data");
+  	  #set_perm_recursive(1000, 1000, 0757, 0757, "/data/data/com.dlto.atom.launcher");
+	endif;
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.2") == "2") || (file_getprop("/tmp/aroma/features.prop","item.2.2") == "1")
+	then
+	  ui_print("@  Installing Nova Launcher...");
+	  package_extract_dir("customize/Choice_Launchers/Nova/system", "/system");
+	endif;
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.2") == "3") || (file_getprop("/tmp/aroma/features.prop","item.2.3") == "1")
+	then
+	  ui_print("@  Installing Apex Launcher...");
+	  package_extract_dir("customize/Choice_Launchers/Apex/system", "/system");
+	endif;
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.2") == "4") || (file_getprop("/tmp/aroma/features.prop","item.2.4") == "1")
+	then
+	  ui_print("@  Installing TWLauncher...");
+	  package_extract_dir("customize/Choice_Launchers/Stock/system", "/system");
+	endif;	
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.2") == "5") || (file_getprop("/tmp/aroma/features.prop","item.2.5") == "1")
+	then
+	  ui_print("@  Installing ADW Launcher...");
+	  package_extract_dir("customize/Choice_Launchers/ADW/system", "/system");
+	endif;		
+if
+      (file_getprop("/tmp/aroma/features.prop","selected.3") == "1") || (file_getprop("/tmp/aroma/features.prop","item.3.1") == "1")
+    then
+      ui_print("@  Installing Kii Keyboard ...");
+      package_extract_dir("customize/Choice_Keyboards/kii/system", "/system");
+    endif;
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.3") == "2") || (file_getprop("/tmp/aroma/features.prop","item.3.2") == "1")
+	then
+	  ui_print("@  Installing Stock Keyboard...");
+	  package_extract_dir("customize/Choice_Keyboards/Stock/system", "/system");
+	endif;
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.3") == "3") || (file_getprop("/tmp/aroma/features.prop","item.3.3") == "1")
+	then
+	  ui_print("@  Installing Samsung Keyboard...");
+	  package_extract_dir("customize/Choice_Keyboards/Samsung/system", "/system");
+	endif;
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.3") == "4") || (file_getprop("/tmp/aroma/features.prop","item.3.4") == "1")
+	then
+	  ui_print("@  Installing Go Keyboard...");
+	  package_extract_dir("customize/Choice_Keyboards/GoKeyboard/system", "/system");
+	endif;    
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.4") == "1") || (file_getprop("/tmp/aroma/features.prop","item.4.1") == "1")
+	then
+	  ui_print("@  Installing Stock SMS...");
+	  package_extract_dir("customize/Choice_SMS/Stock/system", "/system");
+	endif;
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.4") == "2") || (file_getprop("/tmp/aroma/features.prop","item.4.2") == "1")
+	then
+	  ui_print("@  Installing GOSMS...");
+	  package_extract_dir("customize/Choice_SMS/GOSMS/system", "/system");
+	endif;
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.4") == "3") || (file_getprop("/tmp/aroma/features.prop","item.4.3") == "1")
+	then
+	  ui_print("@  Installing Handscent...");
+	  package_extract_dir("customize/Choice_SMS/Handscent/system", "/system");
+	endif;
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.5") == "1") || (file_getprop("/tmp/aroma/features.prop","item.5.1") == "1")
+	then
+	  ui_print("@  Installing LiteROM Theme...");
+	  package_extract_dir("customize/Choice_Theme/LiteROM/system", "/system");
+	endif;
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.5") == "2") || (file_getprop("/tmp/aroma/features.prop","item.5.2") == "1")
+	then
+	  ui_print("@  Installing Stock Theme...");
+	  package_extract_dir("customize/Choice_Theme/Stock/system", "/system");
+	endif;	
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.6") == "1") || (file_getprop("/tmp/aroma/features.prop","item.6.1") == "1")
+	then
+	  ui_print("@  RE-Installing original LiteRom Bluetooth Package...");
+      ui_print("@  Deleting any other Bluetooth Package first...");
+      delete("/system/apps/Bluetooth*.apk");
+      delete("/system/apps/BrcmBluetoothServices.apk");
+	  package_extract_dir("customize/Bluetooth_LiteRom/system", "/system");
+	endif;
+if
+      (file_getprop("/tmp/aroma/features.prop","selected.6") == "2") || (file_getprop("/tmp/aroma/features.prop","item.6.2") == "1")
+    then
+      ui_print("@  RE-Installing IcePop Bluetooth Package...");
+      ui_print("@  Deleting any other Bluetooth Package first...");
+      delete("/system/apps/Bluetooth*.apk");
+      delete("/system/apps/BrcmBluetoothServices.apk");      
+      package_extract_dir("customize/Bluetooth_IcePop/system", "/system");
+    endif;
+if
+      (file_getprop("/tmp/aroma/features.prop","selected.6") == "3") || (file_getprop("/tmp/aroma/features.prop","item.6.3") == "1")
+    then
+      ui_print("@  RE-Installing Cranium Bluetooth Package...");
+      ui_print("@  Deleting any other Bluetooth Package first...");
+      delete("/system/apps/Bluetooth*.apk");
+      delete("/system/apps/BrcmBluetoothServices.apk");      
+      package_extract_dir("customize/Bluetooth_Cranium/system", "/system");
+    endif;
+	
+if
+	  (file_getprop("/tmp/aroma/features.prop","selected.7") == "1") || (file_getprop("/tmp/aroma/features.prop","item.7.1") == "1")
+	then
+	  ui_print("@  Installing Connectbot...");
+	  package_extract_dir("customize/Tools/Connectbot/system", "/system");
+  	  #set_perm_recursive(1000, 1000, 0757, 0757, "/data/data/org.connectbot");
+	endif;	
+	
+	
+ui_print("@  [*] Tweaking system...");
+if
+	  file_getprop("/tmp/aroma/tweaks.prop","item.1.1") == "1"
+	then
+	  ui_print("@  Installing BT HSP fix...");
+	  ui_print("@  Enabling shutdown scripts...");
+	  package_extract_dir("customize/Choice_BTfix/system", "/system");
+	  package_extract_dir("customize/Tweak_ShutdownScripts/system", "/system");
+	  set_perm(0, 0, 0755, "/system/etc/init.d/00sediROM_tweaks");
+	  set_perm(0, 0, 0755, "/system/etc/shutdown/sediROM_btfix");	  
+	  ui_print("@  Setting SystemScriptsExecutor permissions...");
+	  set_perm(0, 0, 6755, "/system/bin/SystemScriptsExecutor");
+	  set_perm(0, 0, 0644, "/system/app/SystemScriptsExecutor.apk");
+	endif;
+if
+	  file_getprop("/tmp/aroma/tweaks.prop","item.1.2") == "1"
+	then
+	  ui_print("@  Installing LiteROM Tweaks...");
+	  package_extract_dir("customize/Tweak_LiteROMTweaks/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/tweaks.prop","item.1.3") == "1"
+	then
+	  ui_print("@  Installing V6 SuperCharger...");
+	  package_extract_dir("customize/Tweak_V6SuperCharger/system", "/system");
+	  package_extract_dir("customize/Tweak_V6SuperCharger/data", "/data");
+	endif;		
+if
+	  file_getprop("/tmp/aroma/tweaks.prop","item.1.4") == "1"
+	then
+	  ui_print("@  Installing KickAssKernelizer...");
+	  package_extract_dir("customize/Tweak_KickAssKernelizer/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/tweaks.prop","item.1.5") == "1"
+	then
+	  ui_print("@  Installing Seeder Entropy Generator...");
+	  package_extract_dir("customize/Tweak_RNGD/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/tweaks.prop","item.1.6") == "1"
+	then
+	  ui_print("@  Installing Bluetooth Audio Tweak...");
+	  package_extract_dir("customize/Tweak_BluetoothAudio/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/tweaks.prop","item.1.7") == "1"
+	then
+	  ui_print("@  Installing Bluetooth Virtuous OC Daemon...");
+	  package_extract_dir("customize/Tweak_VirtuousOC/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/tweaks.prop","item.1.8") == "1"
+	then
+	  ui_print("@  Swapping SDcard Mount Points...");
+	  package_extract_dir("customize/MOD_SwapMounts/Swapped/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/tweaks.prop","item.1.9") == "1"
+	then
+	  ui_print("@  Installing Netforks Tweak...");
+	  package_extract_dir("customize/Tweak_Netforks/system", "/system");
+	endif;
+ui_print("@  [*] Audio...");
+if
+	  file_getprop("/tmp/aroma/audio.prop","item.1.1") == "1"
+	then
+	  ui_print("@  Installing Samsung Music Player...");
+	  package_extract_dir("customize/Choice_MusicPlayer/SamsungPlayer/system", "/system");
+	endif;
+	if
+	  file_getprop("/tmp/aroma/audio.prop","item.1.2") == "1"
+	then
+	  ui_print("@  Installing Google Play Music...");
+	  package_extract_dir("customize/Choice_MusicPlayer/GoogleMusic/system", "/system");
+	endif;
+ui_print("@  [*] Installing Bootanimation...");
+if
+	  file_getprop("/tmp/aroma/bootanimation.prop","selected.1") == "1"
+	then
+	  ui_print("@  Installing LiteROM Bootanimation...");
+	  package_extract_dir("customize/Choice_Bootanimations/LiteROM/data", "/data");
+	endif;
+if
+	  file_getprop("/tmp/aroma/bootanimation.prop","selected.1") == "2"
+	then
+	  ui_print("@  Installing Android Minimal Bootanimation...");
+	  package_extract_dir("customize/Choice_Bootanimations/AndroidMinimal/data", "/data");
+	endif;
+if
+	  file_getprop("/tmp/aroma/bootanimation.prop","selected.1") == "3"
+	then
+	  ui_print("@  Installing White Particles Bootanimation...");
+	  package_extract_dir("customize/Choice_Bootanimations/AndroidWhiteParticles/data", "/data");
+	endif;
+if
+	  file_getprop("/tmp/aroma/bootanimation.prop","selected.1") == "4"
+	then
+	  ui_print("@  Installing Win7Nexus Bootanimation...");
+	  package_extract_dir("customize/Choice_Bootanimations/Win7Nexus/data", "/data");
+	endif;
+if
+	  file_getprop("/tmp/aroma/bootanimation.prop","selected.1") == "5"
+	then
+	  ui_print("@  Installing Green Particles Bootanimation...");
+	  package_extract_dir("customize/Choice_Bootanimations/AndroidGreenParticles/data", "/data");
+	endif;
+if
+	  file_getprop("/tmp/aroma/bootanimation.prop","selected.1") != "6"
+	then
+		# ensure that the choosen bootanimation will work for encrypted devices, too
+		run_program("/sbin/busybox", "cp", "-f", "/data/local/bootanimation.zip", "/system/media/bootanimation-encrypted.zip");
+		ui_print("@  Set bootanim for encrypted devices, too");
+endif;
+
+if
+	  file_getprop("/tmp/aroma/bootanimation.prop","selected.1") == "6"
+	then
+	  ui_print("@  Using AOSP Bootanimation...");
+	  run_program("/sbin/busybox", "rm", "-f", "/data/local/bootanimation.zip");
+      run_program("/sbin/busybox", "rm", "-f", "/system/media/bootanimation-encrypted.zip");
+    endif;
+
+ui_print("@  [*] Tweaking eaven more...");
+if
+	  file_getprop("/tmp/aroma/mods.prop","selected.3") == "1"
+	then
+	  ui_print("@  No BLN...");
+	  package_extract_dir("customize/Choice_BLN/BLNOFF/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/mods.prop","selected.3") == "2"
+	then
+	  ui_print("@  Enabling BLN...");
+	  package_extract_dir("customize/Choice_BLN/BLNON/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/mods.prop","selected.4") == "2"
+	then
+	  ui_print("@  Disabling Sim Security Check...");
+	  package_extract_dir("customize/SimSecurity/system", "/system");
+	endif;
+if
+	  file_getprop("/tmp/aroma/gps.prop","item.1.2") == "1"
+	then
+	  ui_print("@  Installing GPS Tweak...");
+	  package_extract_dir("customize/GPSTweak/system", "/system");	
+	if
+		  file_getprop("/tmp/aroma/gpsregion.prop","selected.1") == "1"
+		then
+		  ui_print("@  Region Africa...");
+		  package_extract_dir("customize/GPSRegion/Africa/system", "/system");
+		endif;
+	if
+		  file_getprop("/tmp/aroma/gpsregion.prop","selected.1") == "2"
+		then
+		  ui_print("@  Region Asia...");
+		  package_extract_dir("customize/GPSRegion/Asia/system", "/system");
+		endif;
+	if
+		  file_getprop("/tmp/aroma/gpsregion.prop","selected.1") == "3"
+		then
+		  ui_print("@  Region Europe...");
+		  package_extract_dir("customize/GPSRegion/Europe/system", "/system");
+		endif;
+	if
+		  file_getprop("/tmp/aroma/gpsregion.prop","selected.1") == "4"
+		then
+		  ui_print("@  Region North America...");
+		  package_extract_dir("customize/GPSRegion/North_America/system", "/system");
+		endif;
+	if
+		  file_getprop("/tmp/aroma/gpsregion.prop","selected.1") == "5"
+		then
+		  ui_print("@  Region Oceania...");
+		  package_extract_dir("customize/GPSRegion/Oceania/system", "/system");
+		endif;
+	if
+		  file_getprop("/tmp/aroma/gpsregion.prop","selected.1") == "6"
+		then
+		  ui_print("@  Region South America...");
+		  package_extract_dir("customize/GPSRegion/South_America/system", "/system");
+		endif;
+	if
+		  file_getprop("/tmp/aroma/gpsregion.prop","selected.1") == "7"
+		then
+		  ui_print("@  Region UK...");
+		  package_extract_dir("customize/GPSRegion/UK/system", "/system");
+		endif;
+	if
+		  file_getprop("/tmp/aroma/gpsregion.prop","selected.1") == "8"
+		then
+		  ui_print("@  Region US Mid-East...");
+		  package_extract_dir("customize/GPSRegion/US_Mid-East/system", "/system");
+		endif;
+endif;
+
+if
+	  file_getprop("/tmp/aroma/utils.prop","item.1.1") == "1"
+	then
+	  ui_print("@  Adding noise reduction option...");
+	  package_extract_dir("customize/Choice_Phone_NoiseReduction/system", "/system");
+	endif;
+
+set_progress(0.50);	
+if
+	  file_getprop("/tmp/aroma/fixpermissions.prop","item.1.1") == "1"
+	then
+ui_print("@");
+ui_print("@  [*] Generating Symlink's...");
+symlink("/system/bin/toolbox", "/system/bin/notify");
+symlink("/system/bin/toolbox", "/system/bin/netstat");
+symlink("/system/bin/toolbox", "/system/bin/mkdir");
+symlink("/system/bin/toolbox", "/system/bin/chown");
+symlink("/system/bin/toolbox", "/system/bin/ln");
+symlink("/system/bin/toolbox", "/system/bin/schedtop");
+symlink("/system/bin/toolbox", "/system/bin/setprop");
+symlink("/system/bin/toolbox", "/system/bin/iftop");
+symlink("/system/bin/toolbox", "/system/bin/log");
+symlink("/system/bin/toolbox", "/system/bin/vmstat");
+symlink("/system/bin/toolbox", "/system/bin/cat");
+symlink("/system/bin/toolbox", "/system/bin/renice");
+symlink("/system/bin/toolbox", "/system/bin/start");
+symlink("/system/bin/toolbox", "/system/bin/mount");
+symlink("/system/bin/toolbox", "/system/bin/setconsole");
+symlink("/system/bin/toolbox", "/system/bin/chmod");
+symlink("/system/bin/toolbox", "/system/bin/top");
+symlink("/system/bin/toolbox", "/system/bin/wipe");
+symlink("/system/bin/toolbox", "/system/bin/insmod");
+symlink("/system/bin/toolbox", "/system/bin/ls");
+symlink("/system/bin/toolbox", "/system/bin/getevent");
+symlink("/system/bin/toolbox", "/system/bin/lsmod");
+symlink("/system/bin/toolbox", "/system/bin/watchprops");
+symlink("/system/bin/toolbox", "/system/bin/getprop");
+symlink("/system/bin/toolbox", "/system/bin/umount");
+symlink("/system/bin/toolbox", "/system/bin/dmesg");
+symlink("/system/bin/toolbox", "/system/bin/sendevent");
+symlink("/system/bin/toolbox", "/system/bin/df");
+symlink("/system/bin/toolbox", "/system/bin/uptime");
+symlink("/system/bin/toolbox", "/system/bin/printenv");
+symlink("/system/bin/toolbox", "/system/bin/ionice");
+symlink("/system/bin/toolbox", "/system/bin/hd");
+symlink("/system/bin/toolbox", "/system/bin/ifconfig");
+symlink("/system/bin/toolbox", "/system/bin/cmp");
+symlink("/system/bin/toolbox", "/system/bin/smd");
+symlink("/system/bin/toolbox", "/system/bin/sleep");
+symlink("/system/bin/toolbox", "/system/bin/rmmod");
+symlink("/system/bin/toolbox", "/system/bin/date");
+symlink("/system/bin/toolbox", "/system/bin/nandread");
+symlink("/system/bin/toolbox", "/system/bin/lsof");
+symlink("/system/bin/toolbox", "/system/bin/mv");
+symlink("/system/bin/toolbox", "/system/bin/route");
+symlink("/system/bin/toolbox", "/system/bin/rm");
+symlink("/system/bin/toolbox", "/system/bin/id");
+symlink("/system/bin/toolbox", "/system/bin/stop");
+symlink("/system/bin/toolbox", "/system/bin/rmdir");
+symlink("/system/bin/toolbox", "/system/bin/ps");
+symlink("/system/bin/toolbox", "/system/bin/ioctl");
+symlink("/system/bin/toolbox", "/system/bin/newfs_msdos");
+symlink("/system/bin/toolbox", "/system/bin/sync");
+symlink("/system/bin/toolbox", "/system/bin/reboot");
+symlink("/system/bin/toolbox", "/system/bin/kill");
+symlink("/system/bin/toolbox", "/system/bin/dd");
+symlink("dumpstate", "/system/bin/dumpcrash");
+symlink("debuggerd", "/system/bin/csview");
+symlink("mksh", "/system/bin/sh");
+
+
+ui_print("@  [*] Setting Permissions...");
+set_perm_recursive(0, 0, 0755, 0644, "/system");
+set_perm_recursive(0, 0, 0750, 0750, "/system/etc/shutdown");	  
+set_perm_recursive(0, 0, 0750, 0750, "/system/etc/init.d");
+set_perm_recursive(0, 2000, 0755, 0755, "/system/bin");
+set_perm(0, 0, 6755, "/system/bin/SystemScriptsExecutor");
+set_perm(0, 3003, 06755, "/system/bin/ip");
+set_perm(0, 3003, 02750, "/system/bin/netcfg");
+set_perm(0, 3004, 02755, "/system/bin/ping");
+set_perm(0, 2000, 06750, "/system/bin/run-as");
+set_perm_recursive(1002, 1002, 0755, 0440, "/system/etc/bluetooth");
+set_perm(0, 0, 0755, "/system/etc/bluetooth");
+set_perm(1000, 1000, 0640, "/system/etc/bluetooth/auto_pairing.conf");
+set_perm(3002, 3002, 0444, "/system/etc/bluetooth/blacklist.conf");
+set_perm(1002, 1002, 0440, "/system/etc/dbus.conf");
+set_perm(1014, 2000, 0550, "/system/etc/dhcpcd/dhcpcd-run-hooks");
+set_perm(0, 2000, 0550, "/system/etc/init.goldfish.sh");
+set_perm_recursive(0, 0, 0755, 0555, "/system/etc/ppp");
+set_perm_recursive(0, 2000, 0755, 0644, "/system/vendor");
+set_perm_recursive(0, 2000, 0755, 0755, "/system/xbin");
+set_perm(0, 2000, 0777, "/system/etc/install-recovery.sh");
+set_perm(0, 2000, 0755, "/system/bin/sysinit");
+set_perm(0, 2000, 0777, "/system/xbin/run-parts");
+set_progress(0.55);
+run_program("/sbin/busybox", "chown", "root.shell", "/system/etc/install-recovery.sh");
+run_program("/sbin/busybox", "chown", "root.shell", "/system/bin/sysinit");
+run_program("/sbin/busybox", "chown", "root.shell", "/system/xbin/run-parts");
+run_program("/sbin/busybox", "chown", "root.root", "/system/etc/init.d/");
+set_progress(0.64);
+run_program("/sbin/busybox","mv","/system/bin/dumpstate2","/system/bin/dumpstate");
+set_progress(0.72);
+endif;
+
+ui_print("@  [*] Activating Busybox...");
+symlink("/system/xbin/busybox", "/system/bin/busybox");
+run_program("/system/xbin/busybox", "--install", "-s", "/system/xbin");
+
+set_progress(0.82);
+
+if
+    file_getprop("/tmp/aroma/root.prop","selected.1") == "1"
+    then
+	ui_print("@  [*] Activating ROOT...");
+	package_extract_dir("customize/ROOT/system", "/system");
+	package_extract_dir("customize/ROOT/sufiles", "/tmp");
+	
+	# supersu related:
+	run_program("/sbin/busybox", "mkdir", "-p", "/system/bin/.ext");
+	set_perm(0, 0, 0777, "/system/bin/.ext");
+	run_program("/sbin/busybox", "cp", "/tmp/su" ,"/system/bin/.ext/.su");
+    set_perm(0, 0, 06755, "/system/bin/.ext/.su");
+	run_program("/sbin/busybox", "touch", "-t", "201412240000", "/system/bin/.ext/.su");
+	
+    set_perm(0, 0, 0755, "/system/etc/install-recovery.sh");
+	symlink("/system/etc/install-recovery.sh", "/system/bin/install-recovery.sh");
+	set_perm(0, 0, 0744, "/system/etc/init.d/99SuperSUDaemon");
+	
+    # dutta or supersu:
+	run_program("/sbin/busybox", "cp", "/tmp/su" ,"/system/xbin/daemonsu");
+	set_perm(0, 0, 0755, "/system/xbin/daemonsu");
+
+	run_program("/sbin/busybox", "cp", "/tmp/su" ,"/system/xbin/su");
+	set_perm(0, 0, 06755, "/system/xbin/su");
+	run_program("/sbin/busybox", "touch", "-t", "201412240000", "/system/xbin/su");
+	symlink("/system/xbin/su", "/system/bin/su");
+
+    run_program("/sbin/busybox", "cp", "/tmp/reboot" ,"/system/xbin/reboot");
+	set_perm(0, 0, 06755, "/system/xbin/reboot");
+	symlink("/system/xbin/reboot", "/system/bin/reboot");
+	run_program("/sbin/busybox", "touch", "-t", "201412240000", "/system/app/Superuser.apk");
+	set_perm(0, 0, 06644, "/system/app/Superuser.apk");
+	
+	set_perm(0, 0, 06644, "/system/etc/.installed_su_daemon");
+	
+	run_program("/system/xbin/su", "--install");
+else
+	ui_print("@  [*] NO-root / UN-Root!");
+	delete("/system/app/Superuser.apk");
+	delete("/system/app/com.koushikdutta.superuser.apk");
+	delete("/system/bin/su");
+	delete("/system/xbin/su");
+	delete("/system/xbin/daemonsu");
+	delete("/system/etc/.installed_su_daemon");
+	delete("/system/etc/init.d/99SuperSUDaemon");
+    delete("/system/bin/install-recovery.sh");
+    delete("/system/etc/install-recovery.sh");
+    delete("/system/bin/.ext/.su");
+    delete("/data/dalvik-cache/*[Ss]uper[Uu]ser*");
+    delete("/data/dalvik-cache/*[Ss]uper[Ss][Uu]*");
+	run_program("/sbin/busybox", "rm", "-r", "/data/data/[Ss]uper[Ss][Uu]*");
+	run_program("/sbin/busybox", "rm", "-r", "/data/data/com.koushikdutta.superuser");	
+    run_program("/sbin/busybox", "rm", "-r", "/system/app/[Ss]uper[Uu]ser*");
+    run_program("/sbin/busybox", "rm", "-r", "/system/app/[Ss]uper[Ss][Uu]*");
+endif;
+
+set_progress(0.90);
+
+if
+      file_getprop("/tmp/aroma/mods.prop","selected.1") == "1"
+    then
+      ui_print("@  [*] Flashing xdajog's LiteKernelv1.2.2_UV-noOC...");
+	  package_extract_dir("customize/Choice_Kernel/xdajog", "/tmp");
+	  package_extract_dir("customize/Choice_Kernel/LiteKernel_LiteROM/system", "/system");      
+      run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
+      run_program("/sbin/busybox", "dd", "if=/tmp/ics1.2.2-LiteKernel-NoGPUOC-FCharge_xdajog.img", "of=/dev/block/mmcblk0p9");
+      delete("/tmp/ics1.2.2-LiteKernel-NoGPUOC-FCharge_xdajog.img");
+      run_program("/sbin/busybox", "sync");
+    endif;
+if
+	  file_getprop("/tmp/aroma/mods.prop","selected.1") == "2"
+	then
+	  ui_print("@  [*] Flashing LiteKernelv1.2.2_LR-0.9...");
+	  package_extract_dir("customize/Choice_Kernel/LiteKernel_LiteROM/system", "/system");
+	  package_extract_dir("customize/Choice_Kernel/LiteKernel_LiteROM/kernel", "/tmp");
+	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
+	  run_program("/sbin/busybox", "dd", "if=/tmp/LiteKernel_boot.img", "of=/dev/block/mmcblk0p9");
+      delete("/tmp/LiteKernel_boot.img");
+      run_program("/sbin/busybox", "sync");
+	endif;
+if
+      file_getprop("/tmp/aroma/mods.prop","selected.1") == "3"
+    then
+      ui_print("@  [*] Flashing LiteKernelv1.2.2_UV-gpuOC...");
+	  package_extract_dir("customize/Choice_Kernel/LiteKernel_LiteROM/kernel", "/tmp");
+	  package_extract_dir("customize/Choice_Kernel/LiteKernel_LiteROM/system", "/system");      
+      run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
+      run_program("/sbin/busybox", "dd", "if=/tmp/ics1.2.2-LiteKernel-GPUOC-FCharge.img", "of=/dev/block/mmcblk0p9");
+      delete("/tmp/ics1.2.2-LiteKernel-GPUOC-FCharge.img");
+      run_program("/sbin/busybox", "sync");
+    endif;
+if
+	  file_getprop("/tmp/aroma/mods.prop","selected.1") == "4"
+	then
+	  ui_print("@  [*] Flashing Stock UCLH2 Kernel...");
+  	  package_extract_dir("customize/Choice_Kernel/Stock/UCLH2", "/tmp");
+	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
+	  run_program("/sbin/busybox", "dd", "if=/tmp/Stock_UCLH2_boot.img", "of=/dev/block/mmcblk0p9");
+      delete("/tmp/Stock_UCLH2_boot.img");
+      run_program("/sbin/busybox", "sync");
+	endif;
+if
+	  file_getprop("/tmp/aroma/mods.prop","selected.1") == "5"
+	then
+	  ui_print("@  [*] Flashing Stock UCLJ3 Kernel...");
+	  package_extract_dir("customize/Choice_Kernel/Stock/UCLJ3", "/tmp");
+	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
+	  run_program("/sbin/busybox", "dd", "if=/tmp/Stock_UCLJ3_boot.img", "of=/dev/block/mmcblk0p9");
+      delete("/tmp/Stock_UCLJ3_boot.img");
+      run_program("/sbin/busybox", "sync");
+	endif;        
+if
+      file_getprop("/tmp/aroma/mods.prop","selected.1") == "6"
+    then
+      ui_print("@  [*] Flashing CM11 kernel...");
+	  package_extract_dir("customize/Choice_Kernel/cyanogenmod", "/tmp");
+      run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
+      run_program("/sbin/busybox", "dd", "if=/tmp/cm11_3.1.10_g5997bf9_xdajog.img", "of=/dev/block/mmcblk0p9");
+	  delete("/tmp/cm11_3.1.10_g5997bf9_xdajog.img");
+     run_program("/sbin/busybox", "sync");
+    endif;        
+if
+      file_getprop("/tmp/aroma/mods.prop","selected.1") == "7"
+    then
+       ui_print("@  [*] Flashing Grakar Kernel v1.4.3...");
+	   run_program("/sbin/busybox", "rm", "-f", "/system/bin/auditd");
+	   package_extract_dir("customize/Choice_Kernel/grakar/1.4.3/kernel", "/tmp");
+	   package_extract_dir("customize/Choice_Kernel/grakar/1.4.3/system", "/system");
+	   set_perm(0, 0, 0777, "/tmp/dump_image");
+	   set_perm(0, 0, 0777, "/tmp/mkbootimg.sh");
+	   set_perm(0, 0, 0777, "/tmp/mkbootimg");
+	   set_perm(0, 0, 0777, "/tmp/unpackbootimg");
+	   run_program("/tmp/dump_image", "/dev/block/mmcblk0p9", "/tmp/boot.img");
+	   run_program("/tmp/unpackbootimg", "-i", "/tmp/boot.img", "-o", "/tmp/");
+	   run_program("/tmp/mkbootimg.sh");
+	   run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
+	   run_program("/sbin/busybox", "dd", "if=/tmp/newboot.img", "of=/dev/block/mmcblk0p9");
+       run_program("/sbin/busybox", "sync");
+    endif;          
+
+set_progress(0.95);
+if
+	  file_getprop("/tmp/aroma/mods.prop","selected.2") == "1"
+	then
+      ui_print("@  [*] Installing Stock Modem...");
+	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p7");
+      run_program("/sbin/busybox", "dd", "if=/tmp/UCLJ3.bin", "of=/dev/block/mmcblk0p7");
+      delete("/tmp/UCLJ3.bin");
+      run_program("/sbin/busybox", "sync");
+	endif;
+if
+	  file_getprop("/tmp/aroma/mods.prop","selected.2") == "2"
+	then
+      ui_print("@  [*] Installing UCKL1 Modem...");
+	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p7");
+      run_program("/sbin/busybox", "dd", "if=/tmp/UCKL1.bin", "of=/dev/block/mmcblk0p7");
+      delete("/tmp/UCKL1.bin");
+      run_program("/sbin/busybox", "sync");
+	endif;
+if
+	  file_getprop("/tmp/aroma/mods.prop","selected.2") == "3"
+	then
+      ui_print("@  [*] Installing UCLH2 Modem...");
+	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p7");
+      run_program("/sbin/busybox", "dd", "if=/tmp/UCLH2.bin", "of=/dev/block/mmcblk0p7");
+      delete("/tmp/UCLH2.bin");
+      run_program("/sbin/busybox", "sync");
+	endif;
+if
+	  file_getprop("/tmp/aroma/mods.prop","selected.2") == "4"
+	then
+      ui_print("@  [*] Installing UCKI3 Modem...");
+	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p7");
+      run_program("/sbin/busybox", "dd", "if=/tmp/UCKI3.bin", "of=/dev/block/mmcblk0p7");
+      delete("/tmp/UCKI3.bin");
+      run_program("/sbin/busybox", "sync");
+	endif;
+if
+	  file_getprop("/tmp/aroma/mods.prop","selected.2") == "5"
+	then
+      ui_print("@  [*] Installing RUXKJ5 Modem...");
+	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p7");
+      run_program("/sbin/busybox", "dd", "if=/tmp/RUXKJ5.bin", "of=/dev/block/mmcblk0p7");
+      delete("/tmp/RUXKJ5.bin");
+      run_program("/sbin/busybox", "sync");
+	endif;
+
+ui_print("@  [*] Updating build.prop...");
+run_program("/sbin/busybox", "cp", "/tmp/aroma-data/build.prop", "/system/build.prop");
+
+ui_print("@  [*] Unmounting Partitions...");
+unmount("/system");
+unmount("/data");
+unmount("/preload");
+
+set_progress(1.00);
+ui_print("@");
+ui_print("@  Installation Complete!");

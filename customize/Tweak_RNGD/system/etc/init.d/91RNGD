@@ -1,0 +1,38 @@
+#!/system/bin/sh
+############################################################
+# This script is part of sediROM
+#
+# Copyright (c) 2014 by Thomas Fischer, www.se-di.de
+# v1.1
+############################################################
+
+echo "sediROM: starting $0" >> /dev/kmsg
+
+# path where the config and log will be saved. the initialization is made by sediROM shutdown script.
+# Thats one of the reasons why we need to reboot at least once in order to get fully working system.
+SEDIDIR=/sdcard/.sediROM/
+FLAG=$SEDIDIR/.initialized
+
+############################################################
+# ensure that /data is not encrypted and if so we wait until it will
+# be unlocked by the user
+ENCSTATE="undefined"
+
+while [ ! -f "$FLAG" ] || [ ! "x$ENCSTATE" == "x1" ];do
+    ENCSTATE=$(getprop vold.post_fs_data_done)
+    echo "sediROM($0): /data (still) locked or sediROM is not fully initialized. encryption state = $ENCSTATE" >> /dev/kmsg
+    sleep 30s
+done
+
+echo "sediROM($0): sediROM fully initialized. Starting RNGD encryption state = $ENCSTATE" >> /dev/kmsg
+
+# Mount Partitions
+busybox mount -o remount,ro / 2>/dev/null
+busybox mount -o remount,ro rootfs 2>/dev/null
+busybox mount -o remount,ro /system 2>/dev/null
+busybox mount -o remount,ro `busybox mount | grep system | awk '{print $1,$3}' | sed -n 1p` 2>/dev/null
+busybox mount -o remount,rw -t auto /system;
+busybox mount -o remount,rw -t auto /data;
+
+# Run Entropy generator Mod
+rngd
