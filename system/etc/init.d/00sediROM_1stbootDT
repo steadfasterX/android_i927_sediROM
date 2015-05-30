@@ -3,7 +3,7 @@
 #
 # Copyright (c) 2015 by Thomas Fischer, www.se-di.de
 # All rights reserved.
-# v2.1
+# v2.3
 #
 # This script is part of sediROM.
 ############################################################
@@ -27,12 +27,16 @@ BOOTSTATE=$(getprop sys.boot_completed)
 while [ ! "x$ENCSTATE" == "x1" ] || [ ! "x$BOOTSTATE" == "x1" ];do
     echo "$(date +%D_%T) - sediROM($0): /data (still) locked or sediROM is not fully initialized." >> /dev/kmsg
     RETIFLAG=$(test -f "$IFLAG")
-    echo "$(date +%D_%T) - sediROM($0): boot state was: > $BOOTSTATE < (should be empty or 1)." >> /dev/kmsg
+    echo "$(date +%D_%T) - sediROM($0): iflag state was: > $RETIFLAG < (should be 0 or empty)." >> /dev/kmsg
+    echo "$(date +%D_%T) - sediROM($0): boot state was: $BOOTSTATE (should be 1)." >> /dev/kmsg
     echo "$(date +%D_%T) - sediROM($0): Encryption test was: $ENCSTATE (should be 1)." >> /dev/kmsg
     sleep 10s
     # re-check states
     ENCSTATE=$(getprop vold.post_fs_data_done)
     BOOTSTATE=$(getprop sys.boot_completed)
+    
+    # wait until sdcard was initialized
+    while [ ! -d "/sdcard/.sediROM" ];do sleep 3s ;done
     # if we were not able to use preload as log storage we will use sdcard instead    
     SEDISDDIR=/sdcard/.sediROM # if we cannot mount /preload this is a fallback
     INDIMOVED=$SEDISDDIR/dir-moved-2-preload.txt # indicator file to know if we are using preload or not               
@@ -40,6 +44,7 @@ while [ ! "x$ENCSTATE" == "x1" ] || [ ! "x$BOOTSTATE" == "x1" ];do
         SEDIDIR=$SEDISDDIR
     fi                                                                                                         
     echo "$(date +%D_%T) - sediROM($0): initflag dir set to $SEDIDIR" >> /dev/kmsg
+
     IFLAG=$SEDIDIR/.initialized
 done
 
@@ -54,12 +59,14 @@ echo "$(date +%D_%T) - sediROM: starting $0" > $LOG
 
 # starting sediROM first boot app when never initialized!
 if [ ! -f "$IFLAG" ];then
+    RETIFLAG=$(test -f "$IFLAG")
     echo "$(date +%D_%T) - sediROM($0): $IFLAG test was: $RETIFLAG (should be empty or 0)." >> /dev/kmsg
-    service call bluetooth 3
-    #disable bluetooth again
-    service call bluetooth 4
-    am start -n "de.secure_diversity.sedirom_boot/de.secure_diversity.sedirom_boot.sedirom_boot" -a android.intent.action.MAIN -c android.intent.category.LAUNCHER
     # enable bluetooth so /data/misc/bluetoothd/MAC-ADRESS gets created:
+    service call bluetooth 3
+    # disable bluetooth again
+    service call bluetooth 4
+    # start sediROM first boot app:
+    am start -n "de.secure_diversity.sedirom_boot/de.secure_diversity.sedirom_boot.sedirom_boot" -a android.intent.action.MAIN -c android.intent.category.LAUNCHER
 fi
 
 echo "$(date +%D_%T) - sediROM: $0 finished." >> $LOG

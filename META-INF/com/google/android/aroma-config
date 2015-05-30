@@ -43,7 +43,7 @@ ini_set("rom_name",             "sediROM");
 ini_set("rom_date",             "2015-05-30");
 writetmpfile(
 	   "build.repl",
-	   				"buildversion=v2.0.46"
+	   				"buildversion=v2.0.48"
 );
 #so to have both the getpropfile and the ini setting I use here ini_set, too:
 ini_set("rom_version",			file_getprop("/tmp/aroma/build.repl","buildversion"));

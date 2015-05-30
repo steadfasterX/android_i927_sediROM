@@ -34,7 +34,11 @@ while [ ! -f "$IFLAG" ] || [ ! "x$ENCSTATE" == "x1" ]|| [ ! "x$BOOTSTATE" == "x1
     sleep 3s
     # re-check states
     ENCSTATE=$(getprop vold.post_fs_data_done)
-    BOOTSTATE=$(getprop sys.boot_completed)    
+    BOOTSTATE=$(getprop sys.boot_completed)
+    
+    # ensure sdcard was initialized
+    while [ ! -d "/sdcard/.sediROM" ];do sleep 3s ;done
+    
     # if we were not able to use preload as log storage we will use sdcard instead    
     SEDISDDIR=/sdcard/.sediROM # if we cannot mount /preload this is a fallback
     INDIMOVED=$SEDISDDIR/dir-moved-2-preload.txt # indicator file to know if we are using preload or not               
