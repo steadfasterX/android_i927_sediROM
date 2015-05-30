@@ -1,0 +1,145 @@
+#!/system/bin/sh
+############################################################
+#
+# Copyright (c) 2014-2015 by Thomas Fischer, www.se-di.de
+# All rights reserved.
+# v2.11
+#
+# This script is part of sediROM.
+############################################################
+
+echo "$(date +%D_%T) - sediROM($0): starting" >> /dev/kmsg
+
+# path where the config and log will be saved
+SEDIDIR=/preload/.sediROM
+
+# Indicator file will be added by shutdown script and that requires at least 1 clean shutdown.
+IFLAG=$SEDIDIR/.initialized
+
+############################################################
+# ensure that /data is not encrypted and if so we wait until it will
+# be unlocked by the user
+ENCSTATE=$(getprop vold.post_fs_data_done)
+
+# ensure that system has booted completely
+BOOTSTATE=$(getprop sys.boot_completed)
+
+while [ ! -f "$IFLAG" ] || [ ! "x$ENCSTATE" == "x1" ] || [ ! "x$BOOTSTATE" == "x1" ];do
+    echo "$(date +%D_%T) - sediROM($0): /data (still) locked or sediROM is not fully initialized." >> /dev/kmsg
+    RETFLAG=$(test -f "$IFLAG")
+    echo "$(date +%D_%T) - sediROM($0): boot state was: $BOOTSTATE (should be empty or 1)." >> /dev/kmsg
+    echo "$(date +%D_%T) - sediROM($0): $IFLAG test was: > $RETFLAG < (should be empty or 0)." >> /dev/kmsg
+    echo "$(date +%D_%T) - sediROM($0): Encryption test was: $ENCSTATE (should be 1)." >> /dev/kmsg
+    echo "$(date +%D_%T) - sediROM($0): Have you rebooted after flashing?!!?" >> /dev/kmsg
+    sleep 3s
+    # re-check states
+    ENCSTATE=$(getprop vold.post_fs_data_done)
+    BOOTSTATE=$(getprop sys.boot_completed)    
+    # if we were not able to use preload as log storage we will use sdcard instead    
+    SEDISDDIR=/sdcard/.sediROM # if we cannot mount /preload this is a fallback
+    INDIMOVED=$SEDISDDIR/dir-moved-2-preload.txt # indicator file to know if we are using preload or not               
+    if [ ! -f "$INDIMOVED" ];then                                                                              
+        SEDIDIR=$SEDISDDIR
+    fi                                                                                                         
+    echo "$(date +%D_%T) - sediROM($0): initflag dir set to $SEDIDIR" >> /dev/kmsg
+    IFLAG=$SEDIDIR/.initialized  
+done
+
+# checks a android service state
+# needs service name as argument:
+F_CHKSVC(){
+        SCSTATE=$(service check $1 |grep -c "not found")
+        if [ $SCSTATE -eq 0 ];then echo $1 running;else echo "$1 not running";fi
+}
+# checks a android process state             
+# needs process name as argument:
+F_CHKPROC(){
+        SCSTATE=$(ps|grep -c $1)
+        if [ $SCSTATE -ge 1 ];then echo $1 running;else echo "$1 not running";fi
+}
+
+#for p in $(echo brcm_patchram_plus);do
+#        unset SCSTATE
+#        F_CHKPROC $p
+#        if [ $SCSTATE -ge 1 ];then echo $p running;else echo "$p not running";fi
+#done
+#for i in $(echo bluetooth); do
+#        unset SCSTATE
+#        F_CHKSVC $i
+#        if [ $SCSTATE -eq 0 ];then echo $i running;else echo "$i not running";fi
+#done
+
+
+# setup work dir
+[ ! -d $WRKDIR ] && mkdir -p $WRKDIR
+
+# double check that we can proceed and /data is unlocked
+if [ -d "$SEDIDIR" ] && [ -d /data/misc ] ;then
+    echo "$(date +%D_%T) - sediROM($0): Starting BT fix cause /data is unlocked and mounted" >> /dev/kmsg
+
+    # bluetooth loosing paired devices workaround
+    # (see also /system/etc/shutdown/sediROM_btfix for the first part)
+    #
+    WRKDIR=$SEDIDIR/btfix
+    BTNAME=00_btbackup.tar
+    BTBAK=$WRKDIR/$BTNAME
+    LOG=$WRKDIR/part2_boot.log
+    BTFIX=$(dirname /data/misc/bluetoothd/*/.)
+    BTFIX_OLD=/data/misc/bluetoothd/*/config
+    BTINDI=$BTFIX/btfix.indicator
+
+    echo "$(date +%D_%T): Starting BT fix part2 (onboot execution).."  > $LOG
+
+    # stopping the BT engines
+    stop bluetoothd	# NOT bluetooth - bluetoothd!
+    stop hciattach
+    sleep 2s
+
+    # restore if we have something to restore
+    if [ -f $BTBAK ];then
+        F_CHKPROC brcm_patchram_plus >> $LOG
+        F_CHKPROC bluetooth >> $LOG
+        F_CHKPROC bluetoothd >> $LOG
+
+        chattr -i $BTFIX $BTFIX_OLD
+        tar -C / -xvf $BTBAK 2>&1 >> $LOG \
+        && echo "$(date +%D_%T) - sediROM: force close indicator. leave this here or BT settings will not backuped." > $BTINDI \
+        && for i in $(find /data/misc/bluetoothd);do chown bluetooth.bluetooth $i;done 2>&1 >> $LOG \
+        && for s in $(find /data/misc/bluetooth);do chown system.system $s;done 2>&1 >> $LOG \
+        && chattr +i $BTFIX \
+        && echo "Immutables:" >> $LOG && lsattr /data/misc/bluetoothd/ >> $LOG\
+        && echo "$(date +%D_%T) - sediROM: All restoring done sucessfully!" >> $LOG
+    else
+        # ensure that we will always have at least the indicator in place
+        chattr -i $BTFIX $BTFIX_OLD
+        echo "$(date +%D_%T) - sediROM: force close indicator. leave this here or BT settings will not backuped." > $BTINDI
+        chattr +i $BTFIX
+        echo "$(date +%D_%T): No previous backup detected. Skipping restore.." >> $LOG
+    fi
+
+    # this is very important otherwise toggle BT to "on" will not work:
+    echo 1 > /sys/devices/platform/bcm4330_bluetooth/rfkill/rfkill0/state
+    echo "rfkill state: $(cat /sys/devices/platform/bcm4330_bluetooth/rfkill/rfkill0/state)" >> $LOG
+
+    # starting the BT engines again
+    start hciattach >> $LOG
+    start bluetoothd >> $LOG # NOT bluetoothd! - bluetooth 
+
+    sleep 2s
+    F_CHKPROC brcm_patchram_plus >> $LOG                                                 
+    F_CHKPROC bluetooth >> $LOG                                                 
+    F_CHKPROC bluetoothd >> $LOG
+
+    # and yes need to do that TWICE! Only way to be really sure that it get set.
+    echo 1 > /sys/devices/platform/bcm4330_bluetooth/rfkill/rfkill0/state
+    echo "rfkill state: $(cat /sys/devices/platform/bcm4330_bluetooth/rfkill/rfkill0/state)" >> $LOG
+
+    # wait a fair amount of time to let BT coming up, trying to delete everything and then make it writeable first.
+    sleep 30s && chattr -i $BTFIX >> $LOG \
+	&& echo "$(date +%D_%T): config dir writable again.." >> $LOG \
+	&& echo "$(date +%D_%T) - sediROM($0): config dir writable again.." >> /dev/kmsg \
+	&
+else
+    echo "$(date +%D_%T) - sediROM($0): Skipping BT fix cause /data locked or not mounted. encryption state = $ENCSTATE" >> /dev/kmsg
+fi
+echo "$(date +%D_%T) - sediROM($0): finished." >> /dev/kmsg

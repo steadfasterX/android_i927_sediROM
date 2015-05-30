@@ -1,3 +1,11 @@
+############################################################
+#
+# Copyright (c) 2014-2015 by xdajog, www.se-di.de
+# All rights reserved.
+#
+# This script is part of sediROM.
+############################################################
+
 ui_print("@");
 ui_print("@  sediROM");
 ui_print("@");
@@ -558,25 +566,6 @@ if
 	  package_extract_dir("customize/Bluetooth_LiteRom/system", "/system");
 	endif;
 if
-      (file_getprop("/tmp/aroma/features.prop","selected.6") == "2") || (file_getprop("/tmp/aroma/features.prop","item.6.2") == "1")
-    then
-      ui_print("@  RE-Installing IcePop Bluetooth Package...");
-      ui_print("@  Deleting any other Bluetooth Package first...");
-      delete("/system/apps/Bluetooth*.apk");
-      delete("/system/apps/BrcmBluetoothServices.apk");      
-      package_extract_dir("customize/Bluetooth_IcePop/system", "/system");
-    endif;
-if
-      (file_getprop("/tmp/aroma/features.prop","selected.6") == "3") || (file_getprop("/tmp/aroma/features.prop","item.6.3") == "1")
-    then
-      ui_print("@  RE-Installing Cranium Bluetooth Package...");
-      ui_print("@  Deleting any other Bluetooth Package first...");
-      delete("/system/apps/Bluetooth*.apk");
-      delete("/system/apps/BrcmBluetoothServices.apk");      
-      package_extract_dir("customize/Bluetooth_Cranium/system", "/system");
-    endif;
-	
-if
 	  (file_getprop("/tmp/aroma/features.prop","selected.7") == "1") || (file_getprop("/tmp/aroma/features.prop","item.7.1") == "1")
 	then
 	  ui_print("@  Installing Connectbot...");
@@ -876,6 +865,8 @@ set_perm_recursive(0, 2000, 0755, 0755, "/system/xbin");
 set_perm(0, 2000, 0777, "/system/etc/install-recovery.sh");
 set_perm(0, 2000, 0755, "/system/bin/sysinit");
 set_perm(0, 2000, 0777, "/system/xbin/run-parts");
+set_perm(0, 0, 0750, "/system/etc/cron.d/");
+set_perm(0, 0, 0640, "/system/etc/cron.d/root");
 set_progress(0.55);
 run_program("/sbin/busybox", "chown", "root.shell", "/system/etc/install-recovery.sh");
 run_program("/sbin/busybox", "chown", "root.shell", "/system/bin/sysinit");
@@ -948,45 +939,33 @@ else
     run_program("/sbin/busybox", "rm", "-r", "/system/app/[Ss]uper[Ss][Uu]*");
 endif;
 
+# ROOT / UNROOT FINISHED
 set_progress(0.90);
 
 if
-      file_getprop("/tmp/aroma/mods.prop","selected.1") == "1"
-    then
-      ui_print("@  [*] Flashing xdajog's LiteKernelv1.2.2_UV-noOC...");
-	  package_extract_dir("customize/Choice_Kernel/xdajog", "/tmp");
-	  package_extract_dir("customize/Choice_Kernel/LiteKernel_LiteROM/system", "/system");      
-      run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
-      run_program("/sbin/busybox", "dd", "if=/tmp/ics1.2.2-LiteKernel-NoGPUOC-FCharge_xdajog.img", "of=/dev/block/mmcblk0p9");
-      delete("/tmp/ics1.2.2-LiteKernel-NoGPUOC-FCharge_xdajog.img");
+	  file_getprop("/tmp/aroma/mods.prop","selected.1") == "1"
+	then
+	  ui_print("@  [*] Flashing xdajog's Stock UCLJ3 kernel...");
+	  package_extract_dir("customize/Choice_Kernel/Stock/UCLJ3", "/tmp");
+	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
+	  run_program("/sbin/busybox", "dd", "if=/tmp/Stock_UCLJ3_boot_xdajog_build3.img", "of=/dev/block/mmcblk0p9");
+      delete("/tmp/Stock_UCLJ3*");
       run_program("/sbin/busybox", "sync");
-    endif;
+	endif;  
 if
 	  file_getprop("/tmp/aroma/mods.prop","selected.1") == "2"
 	then
-	  ui_print("@  [*] Flashing LiteKernelv1.2.2_LR-0.9...");
-	  package_extract_dir("customize/Choice_Kernel/LiteKernel_LiteROM/system", "/system");
-	  package_extract_dir("customize/Choice_Kernel/LiteKernel_LiteROM/kernel", "/tmp");
+	  ui_print("@  [*] Flashing pure Stock UCLJ3 Kernel...");
+	  package_extract_dir("customize/Choice_Kernel/Stock/UCLJ3", "/tmp");
 	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
-	  run_program("/sbin/busybox", "dd", "if=/tmp/LiteKernel_boot.img", "of=/dev/block/mmcblk0p9");
-      delete("/tmp/LiteKernel_boot.img");
+	  run_program("/sbin/busybox", "dd", "if=/tmp/Stock_UCLJ3_boot.img", "of=/dev/block/mmcblk0p9");
+      delete("/tmp/Stock_UCLJ3*");
       run_program("/sbin/busybox", "sync");
-	endif;
+	endif;        
 if
-      file_getprop("/tmp/aroma/mods.prop","selected.1") == "3"
-    then
-      ui_print("@  [*] Flashing LiteKernelv1.2.2_UV-gpuOC...");
-	  package_extract_dir("customize/Choice_Kernel/LiteKernel_LiteROM/kernel", "/tmp");
-	  package_extract_dir("customize/Choice_Kernel/LiteKernel_LiteROM/system", "/system");      
-      run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
-      run_program("/sbin/busybox", "dd", "if=/tmp/ics1.2.2-LiteKernel-GPUOC-FCharge.img", "of=/dev/block/mmcblk0p9");
-      delete("/tmp/ics1.2.2-LiteKernel-GPUOC-FCharge.img");
-      run_program("/sbin/busybox", "sync");
-    endif;
-if
-	  file_getprop("/tmp/aroma/mods.prop","selected.1") == "4"
+	  file_getprop("/tmp/aroma/mods.prop","selected.1") == "3"
 	then
-	  ui_print("@  [*] Flashing Stock UCLH2 Kernel...");
+	  ui_print("@  [*] Flashing pure Stock UCLH2 Kernel...");
   	  package_extract_dir("customize/Choice_Kernel/Stock/UCLH2", "/tmp");
 	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
 	  run_program("/sbin/busybox", "dd", "if=/tmp/Stock_UCLH2_boot.img", "of=/dev/block/mmcblk0p9");
@@ -994,49 +973,100 @@ if
       run_program("/sbin/busybox", "sync");
 	endif;
 if
-	  file_getprop("/tmp/aroma/mods.prop","selected.1") == "5"
-	then
-	  ui_print("@  [*] Flashing Stock UCLJ3 Kernel...");
-	  package_extract_dir("customize/Choice_Kernel/Stock/UCLJ3", "/tmp");
-	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
-	  run_program("/sbin/busybox", "dd", "if=/tmp/Stock_UCLJ3_boot.img", "of=/dev/block/mmcblk0p9");
-      delete("/tmp/Stock_UCLJ3_boot.img");
-      run_program("/sbin/busybox", "sync");
-	endif;        
-if
-      file_getprop("/tmp/aroma/mods.prop","selected.1") == "6"
+      file_getprop("/tmp/aroma/mods.prop","selected.1") == "4"
     then
-      ui_print("@  [*] Flashing CM11 kernel...");
+      ui_print("@  [*] Flashing sediKERNEL v1.0...");
+	  package_extract_dir("customize/Choice_Kernel/sediKERNEL", "/tmp");
+      run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
+      run_program("/sbin/busybox", "dd", "if=/tmp/ics_sediKERNEL_v1.0-build48_xdajog.img", "of=/dev/block/mmcblk0p9");
+      delete("/tmp/*ernel*");
+     run_program("/sbin/busybox", "sync");
+    endif;	
+if
+      file_getprop("/tmp/aroma/mods.prop","selected.1") == "5"
+    then
+      ui_print("@  [*] Flashing bubor's CM11 kernel...");
 	  package_extract_dir("customize/Choice_Kernel/cyanogenmod", "/tmp");
       run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
       run_program("/sbin/busybox", "dd", "if=/tmp/cm11_3.1.10_g5997bf9_xdajog.img", "of=/dev/block/mmcblk0p9");
 	  delete("/tmp/cm11_3.1.10_g5997bf9_xdajog.img");
      run_program("/sbin/busybox", "sync");
-    endif;        
+    endif;
+if
+      file_getprop("/tmp/aroma/mods.prop","selected.1") == "6"
+    then
+      ui_print("@  [*] Flashing LiteKernel bubor-r20150508...");
+	  package_extract_dir("customize/Choice_Kernel/litekernel/kernel", "/tmp");	  
+	  package_extract_dir("customize/Choice_Kernel/litekernel/system", "/system");      
+      run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
+      run_program("/sbin/busybox", "dd", "if=/tmp/ics_LiteKernel_release-bubor-20150508_linaro_4.9.1-2014.04.img", "of=/dev/block/mmcblk0p9");
+      delete("/tmp/*ernel*");
+      run_program("/sbin/busybox", "sync");
+    endif;
 if
       file_getprop("/tmp/aroma/mods.prop","selected.1") == "7"
     then
-       ui_print("@  [*] Flashing Grakar Kernel v1.4.3...");
-	   run_program("/sbin/busybox", "rm", "-f", "/system/bin/auditd");
-	   package_extract_dir("customize/Choice_Kernel/grakar/1.4.3/kernel", "/tmp");
-	   package_extract_dir("customize/Choice_Kernel/grakar/1.4.3/system", "/system");
-	   set_perm(0, 0, 0777, "/tmp/dump_image");
-	   set_perm(0, 0, 0777, "/tmp/mkbootimg.sh");
-	   set_perm(0, 0, 0777, "/tmp/mkbootimg");
-	   set_perm(0, 0, 0777, "/tmp/unpackbootimg");
-	   run_program("/tmp/dump_image", "/dev/block/mmcblk0p9", "/tmp/boot.img");
-	   run_program("/tmp/unpackbootimg", "-i", "/tmp/boot.img", "-o", "/tmp/");
-	   run_program("/tmp/mkbootimg.sh");
-	   run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
-	   run_program("/sbin/busybox", "dd", "if=/tmp/newboot.img", "of=/dev/block/mmcblk0p9");
-       run_program("/sbin/busybox", "sync");
-    endif;          
+      ui_print("@  [*] Flashing LiteKernel r20130222...");
+	  package_extract_dir("customize/Choice_Kernel/litekernel/kernel", "/tmp");	  
+	  #package_extract_dir("customize/Choice_Kernel/litekernel/system", "/system");      
+      run_program("/sbin/busybox", "rm", "/system/lib/modules/dhd.ko");
+      run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
+      run_program("/sbin/busybox", "dd", "if=/tmp/ics_litekernel-r20130222_xdajog-17.img", "of=/dev/block/mmcblk0p9");
+      delete("/tmp/*ernel*");
+      run_program("/sbin/busybox", "sync");
+    endif;		
+if
+      file_getprop("/tmp/aroma/mods.prop","selected.1") == "8"
+    then
+      ui_print("@  [*] Flashing LiteKernel r20130221...");
+	  package_extract_dir("customize/Choice_Kernel/litekernel/kernel", "/tmp");	  
+	  package_extract_dir("customize/Choice_Kernel/litekernel/system", "/system");      
+      run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
+      run_program("/sbin/busybox", "dd", "if=/tmp/ics_LiteKernel_release-20130221.img", "of=/dev/block/mmcblk0p9");
+      delete("/tmp/*ernel*");
+      run_program("/sbin/busybox", "sync");
+    endif;	
+if
+      file_getprop("/tmp/aroma/mods.prop","selected.1") == "9"
+    then
+      ui_print("@  [*] Flashing xdajog's LiteKernelv1.2.2_UV-noOC...");
+	  package_extract_dir("customize/Choice_Kernel/xdajog", "/tmp");
+	  package_extract_dir("customize/Choice_Kernel/litekernel/system", "/system");      
+      run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
+      run_program("/sbin/busybox", "dd", "if=/tmp/ics1.2.2-LiteKernel-NoGPUOC-FCharge_xdajog.img", "of=/dev/block/mmcblk0p9");
+      delete("/tmp/ics1.2.2-LiteKernel-NoGPUOC-FCharge_xdajog.img");
+      run_program("/sbin/busybox", "sync");
+    endif;
+if
+      file_getprop("/tmp/aroma/mods.prop","selected.1") == "10"
+    then
+      ui_print("@  [*] Flashing LiteKernelv1.2.2_UV-gpuOC...");
+	  package_extract_dir("customize/Choice_Kernel/litekernel/kernel", "/tmp");
+	  package_extract_dir("customize/Choice_Kernel/litekernel/system", "/system");      
+      run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
+      run_program("/sbin/busybox", "dd", "if=/tmp/ics1.2.2-LiteKernel-GPUOC-FCharge.img", "of=/dev/block/mmcblk0p9");
+      delete("/tmp/ics1.2.2-LiteKernel-GPUOC-FCharge.img");
+      run_program("/sbin/busybox", "sync");
+    endif;
+if
+	  file_getprop("/tmp/aroma/mods.prop","selected.1") == "11"
+	then
+	  ui_print("@  [*] Flashing LiteKernelv1.2.2_LR-0.9...");
+	  package_extract_dir("customize/Choice_Kernel/litekernel/system", "/system");
+	  package_extract_dir("customize/Choice_Kernel/litekernel/kernel", "/tmp");
+	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
+	  run_program("/sbin/busybox", "dd", "if=/tmp/LiteKernel_boot.img", "of=/dev/block/mmcblk0p9");
+      delete("/tmp/LiteKernel_boot.img");
+      run_program("/sbin/busybox", "sync");
+	endif;
 
+# KERNEL MOD FINISHED
 set_progress(0.95);
+
 if
 	  file_getprop("/tmp/aroma/mods.prop","selected.2") == "1"
 	then
-      ui_print("@  [*] Installing Stock Modem...");
+      ui_print("@  [*] Installing UCLJ3 Modem...");
 	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p7");
       run_program("/sbin/busybox", "dd", "if=/tmp/UCLJ3.bin", "of=/dev/block/mmcblk0p7");
       delete("/tmp/UCLJ3.bin");
@@ -1078,6 +1108,9 @@ if
       delete("/tmp/RUXKJ5.bin");
       run_program("/sbin/busybox", "sync");
 	endif;
+
+# RADIO MOD FINISHED
+set_progress(0.98);
 
 ui_print("@  [*] Updating build.prop...");
 run_program("/sbin/busybox", "cp", "/tmp/aroma-data/build.prop", "/system/build.prop");

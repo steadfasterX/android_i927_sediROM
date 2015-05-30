@@ -1,0 +1,15 @@
+###############################################################
+#
+# Copyright (c) 2015 by Thomas Fischer, www.se-di.de
+# All rights reserved.
+#
+# Cron entries for fixing battery drain by Google
+#
+# This script is part of sediROM.
+###############################################################
+
+# this fixes damn google play battery drain:
+*/8 * * * * 	/system/xbin/sedi_fix-gplay-drain
+
+# this fixes the problem that BT will not work anymore after FC's / soft reboots
+*/1 * * * * 	/system/xbin/sedi_btFCdetect.sh

@@ -1,0 +1,150 @@
+#!/system/bin/sh
+############################################################
+#
+# Copyright (c) 2014-2015 by xdajog, www.se-di.de
+# All rights reserved.
+# v2.21
+#
+# This script is part of sediROM.
+############################################################
+
+echo "$(date +%D_%T) - sediROM($0): starting" >> /dev/kmsg
+
+# path where the config and log will be saved
+SEDIDIR=/preload/.sediROM
+SEDISDDIR=/sdcard/.sediROM # if we cannot mount /preload this is a fallback
+INDIMOVED=$SEDISDDIR/dir-moved-2-preload.txt # indicator file to know if we are using preload or not
+
+WRKDIR=$SEDIDIR/initd
+LOG=$WRKDIR/${0##*/}.log
+
+############################################################
+# ensure that /data is not encrypted and if so we wait until it will
+# be unlocked by the user
+ENCSTATE=$(getprop vold.post_fs_data_done)
+
+# ensure that system has booted completely
+BOOTSTATE=$(getprop sys.boot_completed)
+
+while [ ! -d "/data/misc" ] || [ ! "x$ENCSTATE" == "x1" ] || [ ! "x$BOOTSTATE" == "x1" ];do
+    echo "$(date +%D_%T) - sediROM($0): /data (still) locked or sediROM is not ready." >> /dev/kmsg
+    RETFLAG=$(test -d "/data/misc")
+    echo "$(date +%D_%T) - sediROM($0): boot state was: $BOOTSTATE (should be empty or 1)." >> /dev/kmsg
+    echo "$(date +%D_%T) - sediROM($0): /data test was: > $RETFLAG < (should be empty or 0)." >> /dev/kmsg
+    echo "$(date +%D_%T) - sediROM($0):: Encryption test was: $ENCSTATE (should be 1)." >> /dev/kmsg
+    sleep 3s
+    # re-check states
+    ENCSTATE=$(getprop vold.post_fs_data_done)
+    BOOTSTATE=$(getprop sys.boot_completed)
+    # if we were not able to use preload as log storage we will use sdcard instead    
+    SEDISDDIR=/sdcard/.sediROM # if we cannot mount /preload this is a fallback
+    INDIMOVED=$SEDISDDIR/dir-moved-2-preload.txt # indicator file to know if we are using preload or not               
+    if [ ! -f "$INDIMOVED" ];then                                                                              
+        SEDIDIR=$SEDISDDIR                                                                                     
+    fi
+    echo "$(date +%D_%T) - sediROM($0): init dir set to $SEDIDIR" >> /dev/kmsg
+done
+
+# setup work dir depending on if we have preload or not
+mount -oremount,rw /preload
+if [ $? -eq 0 ];then
+    echo "$(date) - sediROM: starting $0" > $LOG
+    echo "$(date): mounted /preload read-writable. Will use $SEDIDIR as working dir.." >> $LOG
+
+    # setup work dir and mig log
+    [ ! -d $WRKDIR ] && mkdir -p $WRKDIR
+    MLOG=$WRKDIR/${0##*/}_migration.log
+    echo "$(date) - sediROM: Migration log started" > $MLOG
+    
+    # migrate to preload if needed
+    [ -d $SEDISDDIR ] && cp -a $SEDISDDIR/* $SEDIDIR/ >> $MLOG && rm -r $SEDISDDIR && echo "$(date): Copied content of $WRKDIR to $SEDISDDIR and deleted old one" >> $MLOG
+    
+    # do the pseudo linkage to preload. why pseudo? because we cannot link through different filesystems..
+    mkdir -p $SEDISDDIR
+    echo "sediROM logs has been moved at $(date)! Goto $SEDIDIR." > $INDIMOVED && echo "$(date): sediROM logs has been moved from $SEDISDDIR to $SEDIDIR" >> $MLOG
+else
+    echo "$(date): /preload could not be mounted read-writable! Will use $SEDISDDIR as working dir.." >> $LOG
+    [ -f "$INDIMOVED" ] && rm -f "$INDIMOVED"
+    # change to the fallback SD path
+    SEDIDIR=$SEDISDDIR
+    
+    # to be sure that the paths are really the changed one do the setvar again
+    WRKDIR=$SEDIDIR/init
+    LOG=$WRKDIR/${0##*/}.log
+    
+    # create working directory
+    [ ! -d $WRKDIR ] && mkdir -p $WRKDIR
+    echo "$(date) - sediROM: starting $0" > $LOG
+fi
+
+
+############################################################
+# enable modifying 
+#
+mount -oremount,rw /
+echo "$(date): mounted / read-writeable"  >> $LOG
+mount -oremount,rw /system
+echo "$(date): mounted /system read-writeable"  >> $LOG
+
+############################################################
+# Preparing crond startup (will be started in 99sediROM)
+#
+echo "$(date): preparing crond" >> $LOG
+
+# crond has "/bin/sh" hardcoded
+[ -d /bin ] || ln -s /system/bin /bin
+
+# preparing crond req (getpwnam will check /etc/passwd)
+PWDROOT=$(grep -c root /etc/passwd)
+if [ ! -f /etc/passwd ]||[ z${PWDROOT} == "z0" ];then
+    echo "$(date): passwd miss root entry or does not exist." >> $LOG
+    if [ ! -f /etc/passwd ];then echo "root:x:0:0::/system/etc/cron.d:/system/bin/sh" > /etc/passwd ;else echo "root:x:0:0::/system/etc/cron.d:/system/bin/sh" >> /etc/passwd;fi
+    echo "$(date): passwd created/updated." >> $LOG
+fi
+# should be root already but I like it to have it SURE
+chown root /etc/passwd
+# ensure only root can edit but everyone read
+chmod 644 /etc/passwd
+
+# do the same for group file
+PWDROOT=$(grep -c root /etc/group)
+if [ ! -f /etc/group ]||[ z${PWDROOT} == "z0" ];then
+    echo "$(date): group miss root entry or does not exist." >> $LOG
+    if [ ! -f /etc/group ];then echo "root:x:0:root" > /etc/group ;else echo "root:x:0:root" >> /etc/group;fi
+    echo "$(date): group created/updated." >> $LOG
+fi
+# should be root already but I like it to have it SURE
+chown root /etc/group
+# ensure only root can edit but everyone read
+chmod 644 /etc/group
+
+
+############################################################
+# compat hack when coming from jelly bean back to ICS..
+#
+[ ! -d /storage ] && mkdir /storage                                                                                   
+[ ! -L /storage/sdcard0 ] && ln -s /mnt/sdcard /storage/sdcard0                                                       
+[ ! -L /storage/sdcard1 ] && ln -s /mnt/sdcard/external_sd /storage/sdcard1 
+echo "$(date): added mount point compatibility for users coming from JB"  >> $LOG
+
+############################################################
+# Fix crappy Google Play Framework causing battery drain
+# Details:
+# http://forum.xda-developers.com/showpost.php?p=53881089
+# http://muzso.hu/2014/09/18/how-to-fix-the-partial-wakelock-problem-on-cyanogenmod-11-with-google-play-services-and-o
+#
+/system/xbin/sedi_fix-gplay-drain  >> $LOG                                
+echo "$(date): Initially disabling Google Play bullshit ended with errorcode: $?"  >> $LOG 
+
+############################################################
+# remount as ro again at the end
+#
+mount -oremount,ro /
+echo "$(date): re-mounted / read-only"  >> $LOG
+mount -oremount,ro /system
+echo "$(date): re-mounted /system read-only"  >> $LOG
+
+echo "$(date +%D_%T) - sediROM($0): finished" >> /dev/kmsg
+####################################################################
+######## NO CODE BEHIND THIS LINE ##################################
+####################################################################

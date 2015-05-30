@@ -1,42 +1,49 @@
-### LICENSE:
-#
-# Copyright (C) 2011 Ahmad Amarullah ( http://amarullz.com/ )
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 #
 ### FILE INFO:
 #
-# AROMA Installer 2.56 - AROMA Installer Configuration
+# AROMA Installer 2.70 - AROMA Installer Configuration
 #       (c) 2011-2012 by Ahmad Amarullah
 #           amarullz - xda-developers
 #           http://www.amarullz.com/
 #
-#       Binary Version  : 2.56
-#       Binary Codename : Edelweis
+#       Binary Version  : 2.70B
+#       Binary Codename : Flamboyan
+#
+### INFO:
+#
+# * AROMA Resource Dir  = META-INF/com/google/android/aroma
+#
+# * AROMA Temporary Dir = /tmp/aroma/
+#
+# * About Icon          = @alert - show <AROMA Resource Dir>/icons/alert.png
+#                         or if theme used it will find <themedir>/icon.alert.png
+#                         you can still access it via "icons/alert"
+#
+# * dp                  = Device Pixelate. WVGA/QHD = 3, HVGA = 2.
+#                         dp calculated with = round(min(width,height) / 160)
+#
+###
 #
 #
 # Aroma Guide: http://forum.xda-developers.com/showthread.php?t=2422457
 #
 ########################################################################
+########################################################################
+#
+# Copyright (c) 2014-2015 by xdajog, www.se-di.de
+# All rights reserved.
+#
+# This script is part of sediROM.
+#########################################################################
 
 calibrate("0.8429","51","0.9658", "9", "yes");
 ini_set("rom_name",             "sediROM");
 
-# workaround START because ini_get is buggy in 2.56 #
-ini_set("rom_date",             "2015-02-02");
+# workaround START because ini_get is buggy in Aroma #
+ini_set("rom_date",             "2015-05-30");
 writetmpfile(
 	   "build.repl",
-	   				"buildversion=v1.7.6"
+	   				"buildversion=v2.0.46"
 );
 #so to have both the getpropfile and the ini setting I use here ini_set, too:
 ini_set("rom_version",			file_getprop("/tmp/aroma/build.repl","buildversion"));
@@ -56,6 +63,9 @@ anisplash(
 );
 
 theme("miui");
+loadlang("langs/en.lang");
+fontresload( "0", "ttf/Roboto-Regular.ttf", "12" );
+fontresload( "1", "ttf/Roboto-Regular.ttf", "14" );
 
 # disable vibration (will work only in AROMA v2.70)
 #ini_set("vibrate", "0");
@@ -75,6 +85,21 @@ viewbox(
     "and do that BEFORE FLASHING and also when upgrading only!\n\n\n"+
     "Press Next to continue the installation...",
     "@info"
+);
+
+
+textbox(
+  #-- Title
+    "CHANGELOG",
+  
+  #-- Subtitle
+    "sediROM changelog",
+  
+  #-- Icon
+    "@update",
+  
+  #-- file
+    zipread("tmp/CHANGES")
 );
 
 
@@ -140,7 +165,7 @@ if prop("type.prop","selected") == "1" then
 
 	writetmpfile(
 		  "features.prop",
-			"item.1.1=1\n"+			
+			"item.1.1=0\n"+			
 			"selected.1=2\n"+
 			"selected.2=1\n"+
 			"selected.3=3\n"+
@@ -289,12 +314,61 @@ endif;
 ##########  						END - NORMAL Installation/Upgrade - END							############
 ####################################################################################################################
 
+####################################################################################################################
+##########  							MODE: Modifying Jump Station 									############
+####################################################################################################################
+#####
+# Entrypoint for Modify Menu
+# Usage: goto("aroma_installer_modmenu_pos");
+gotolabel("aroma_installer_modmenu_pos");
+
+# check if we coming from the finished installer:
+if getvar("goto_modmenu")=="1"
+then
+	   viewbox(
+		   "Modify mode started",
+		   "\n\nThe wizard is ready to begin customization.\n\n"+
+		   "Press next to continue.\n\n"+
+		   "Press the Menu Key -> Quit Installation if you want to exit the wizard.",
+		   "@info"
+	   );
+   	   ini_set("text_next", "Next");
+
+	   #####
+	   # clean up first:
+	   run_program("/sbin/busybox", "rm",
+	   	   "/tmp/aroma/root.prop",
+		   "/tmp/aroma/wipe.prop",
+		   "/tmp/aroma/systemcore.prop",
+		   "/tmp/aroma/btfix.prop",
+		   "/tmp/aroma/fixpermissions.prop",
+		   "/tmp/aroma/apps.prop",
+		   "/tmp/aroma/addapps.prop",
+		   "/tmp/aroma/mods.prop",
+		   "/tmp/aroma/radio.prop",
+		   "/tmp/aroma/gps.prop",
+		   "/tmp/aroma/gpsregion.prop",
+		   "/tmp/aroma/utils.prop",
+		   "/tmp/aroma/features.prop",
+		   "/tmp/aroma/bootanimation.prop",
+		   "/tmp/aroma/tweaks.prop",
+		   "/tmp/aroma/audio.prop");
+	   
+	   # preselect the modify type
+       writetmpfile(
+		  "type.prop",
+			"selected=2\n"
+	   );
+endif;
+####################################################################################################################
+##########  							MODE: Modifying Jump Station - END	 							############
+####################################################################################################################
 
 ####################################################################################################################
 ##########  							MODE: Modifying Installation 									############
 ####################################################################################################################
-
-if prop("type.prop","selected") == "2" then
+if prop("type.prop","selected") == "2"
+then
 
 	writetmpfile(
 		  "wipe.prop",
@@ -359,28 +433,34 @@ if prop("type.prop","selected") == "2" then
 
 	selectbox(
 				"ROM Features",
-				"Please select Feature you wish to add",	  
+				"Please select features you wish to add",	  
 				"@default",	  
 				"mods.prop",	  
 
-					"Kernel",  "The kernel area:",  																											2,  #-- Group 1. key = "selected.1"
-	                "LiteKernelv1.2.2_UV-noOC",  "Recommended: LiteKernel v1.2.2 not OverClocked and with UnderVoltage.",  						0,  #-- selected.1 = 1
-					"LiteKernelv1.2.2_LR-0.9",  "Original LiteRom v0.9 Kernel.Tweaked - LiteKernel v1.2.2 overclocked with UnderVoltage",  		0,  #-- selected.1 = 2
-	                "LiteKernelv1.2.2_UV-gpuOC",  "LiteKernel v1.2.2 GPU OverClocked and with UnderVoltage",  									0,  #-- selected.1 = 3         
-		 			"Stock Kernel",  "Bluetooth will loose pairings on reboot! Pure Samsung Stock Kernel (UCLH2)",  							0,  #-- selected.1 = 4
-					"Stock Kernel-latest v3.1.10",  "Bluetooth will loose pairings on reboot! Pure Samsung Stock Kernel (UCLJ3)",  						0,  #-- selected.1 = 5
-					"CM11 v3.1.10",  "The CM11 kernel. No wakeup delays, no lost calls/sms but soft reboots atm!!!",  							0,  #-- selected.1 = 6
+					"Kernel area (grouped by their source)",  "The kernel area",  																	2,  #-- Group 1. key = "selected.1"
+					"Stock-UCLJ3_xdajog",  "Latest Samsung Stock Kernel but with Bluetooth fix and custom bootanimation (v3.1.10)", 				0,  #-- selected.1 = 1
+					"Stock-UCLJ3",  "Bluetooth will loose pairings every reboot! Untouched & pure Samsung Stock Kernel (v3.1.10)",					0,  #-- selected.1 = 2
+		 			"Stock-UCLH2",  "Bluetooth will loose pairings every reboot! Untouched & pure Samsung Stock Kernel",  							0,  #-- selected.1 = 3
+					"sediKERNEL_v1.0",  "xdajog's kernel (v3.1.10). No screen wakeup lag. Based on CM11 by bubor. MTP working.",					0,  #-- selected.1 = 4
+					"CM11_bubor",  "Bubor's CM11 kernel (v3.1.10). No screen wakeup lag, MTP IS NOT working!!!",									0,  #-- selected.1 = 5
+	                "LK_r20150508_bubor",  "LiteKernel L2_hsic patched. Made by bubor at 2015-05-08 with Linaro 4.9.1.",							0,  #-- selected.1 = 6
+	                "LK_r20130222_xdajog",  "4.2 Litekernel by thegreatergood migrated by xdajog. No long term experience yet!", 					0,  #-- selected.1 = 7					
+	                "LK_r20130221_xdajog",  "4.2 Litekernel by thegreatergood migrated by xdajog. No long term experience yet!", 					0,  #-- selected.1 = 8
+	                "LK_v1.2.2_UV-noOC",  "Old LiteKernel not OverClocked and with UnderVoltage.",  												0,  #-- selected.1 = 9
+	                "LK_v1.2.2_UV-gpuOC",  "Old LiteKernel v1.2.2 GPU OverClocked and with UnderVoltage",  											0,  #-- selected.1 = 10     
+					"LK_v1.2.2_LR-0.9",  "Original old LiteRom-v0.9 Kernel.Tweaked - LiteKernel overclocked with UnderVoltage",  					0,  #-- selected.1 = 11
 
-					"Modem",        "Choose another Modem if you want",                           	2,  #-- Group 2. key = "selected.2"
-					"Stock Modem",         "AT&T UCLJ3 Modem",                                    	0,  #-- selected.2 = 1
-					"UCKL1 Modem",  	   "AT&T UCKL1 Modem",              						0,  #-- selected.2 = 2
-					"UCLH2 Modem",  	   "AT&T UCLH2 Modem",              						0,  #-- selected.2 = 3
-					"UCKI3 Modem",  	   "AT&T UCKI3 Modem",              						0,  #-- selected.2 = 4
-					"RUXKJ5 Modem",  	   "Rogers RUXKJ5 Modem",              						0,  #-- selected.2 = 5
+
+					"Modem/Radio/Baseband",     "Choose another Modem if you want",             			2,  #-- Group 2. key = "selected.2"
+					"UCLJ3 Modem",         		"Latest available AT&T Modem",                          	0,  #-- selected.2 = 1
+					"UCKL1 Modem",  	   		"AT&T UCKL1 Modem",              							0,  #-- selected.2 = 2
+					"UCLH2 Modem",  	   		"AT&T UCLH2 Modem",              							0,  #-- selected.2 = 3
+					"UCKI3 Modem",  	   		"AT&T UCKI3 Modem",              							0,  #-- selected.2 = 4
+					"RUXKJ5 Modem",  	   		"Rogers RUXKJ5 Modem",              						0,  #-- selected.2 = 5
 
 					"BLN Support",       "",                                                                                             			2,  #-- Group 3. key = "selected.3"
 					"Stock",             "",                                                                      						 			0,  #-- selected.3 = 1
-					"Enable BLN",        "Enable Backlight support - you need also a BLN app!",                          															1,  #-- selected.3 = 2				
+					"Enable BLN",        "Enable Backlight support - you need a BLN app to use this!",                          					1,  #-- selected.3 = 2				
 					
 					"Sim Unlock",        "",                                                                                             			2,  #-- Group 5. key = "selected.5"
 					"Stock",             			  "Recommended for users with Factory Unlock",                      						 	0,  #-- selected.5 = 1
@@ -395,7 +475,7 @@ if prop("type.prop","selected") == "2" then
 					"radio.prop",
 
 						"Modem",        "I force to re-install because otherwise after a Kernel update you won't get baseband...",                           2,  #-- Group 2. key = "selected.2"
-						"Stock Modem",         "AT&T UCLJ3 Modem",                                                                       1,  #-- selected.2 = 1
+						"UCLJ3 Modem",         "Latest available AT&T Modem",                                                            1,  #-- selected.2 = 1
 						"UCKL1 Modem",  	   "AT&T UCKL1 Modem",              														 0,  #-- selected.2 = 2
 						"UCLH2 Modem",  	   "AT&T UCLH2 Modem",              														 0,  #-- selected.2 = 3
 						"UCKI3 Modem",  	   "AT&T UCKI3 Modem",              														 0,  #-- selected.2 = 4
@@ -486,8 +566,6 @@ if prop("type.prop","selected") == "2" then
 
 					"Bluetooth",		"",	                               					2, #-- Group 6. key = "selected.6"
 					"Original Bluetooth",		 "Install/Reinstall Bluetooth stack. Use it when you have problems only.",      0, #-- selected.6 = 1 
-	                "IcePop Bluetooth",         "Install/Reinstall Bluetooth stack of IcePop v1.4. Use it when you have problems only.",      0, #-- selected.6 = 2 
-	                "Cranium Bluetooth",         "Install/Reinstall Bluetooth stack of Cranium (release date 28th January 2012). Use it when you have problems only.",      0, #-- selected.6 = 3 
 
 					"Tools",		"",	                               					2, #-- Group 7. key = "selected.7"
 					"Connectbot",		 "Install/Reinstall Connectbot terminal app.",      0 #-- selected.7 = 1  
@@ -606,7 +684,7 @@ viewbox(
     "@confirm"
 );
 
-ini_set("text_next", "Next >");
+ini_set("text_next", "Next");
 
 setvar("retstatus",
   install(
@@ -640,8 +718,38 @@ viewbox(
     "@confirm"
 );
 
-ini_set("text_next", "Next >");
+ini_set("text_next", "Next");
 
+# When installation was a success: Modify installation wanted?
+if getvar("retstatus") == "0"
+then
+		   checkviewbox(
+			 #-- Title
+			   "Modify Installation jump station",
+			 
+			 #-- Text
+			   "\n\n\n\nInstallation has finished.\n\nDo you want to go directly to the \n\n<b>MODIFY screen/mode</b>?\n\n"+
+			   "If you want to change settings in sediROM like kernel, modem etc you can do so right now by selecting this option.\n",
+			   
+			 #-- Icon
+			   "@welcome",
+		   
+			 #-- Checkbox Text
+			   "Start sediROM MODIFY mode",
+		   
+			 #-- Initial Checkbox value ( 0=unchecked, 1=checked ) -  (Optional, default:0)
+			   "0",
+		   
+			 #-- Save checked value in variable "reboot_it" (Optional)
+			   "goto_modmenu"
+		   );
+		   if getvar("goto_modmenu")=="1"
+		   then
+			 goto("aroma_installer_modmenu_pos");
+		   endif;
+endif;
+
+# else show the reboot option
 checkviewbox(
     "Installation Completed",
     "<#selectbg_g><b>Congratulation...</b></#>\n\n"+

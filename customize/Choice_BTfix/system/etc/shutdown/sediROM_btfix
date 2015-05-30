@@ -1,19 +1,32 @@
 #!/system/bin/sh
 ############################################################
-# This script is part of sediROM
+#
 # Copyright(c) 2014-2015 by Thomas Fischer, www.se-di.de
-# v2.1
+# All rights reserved.
+# v2.7
+#
+# This script is part of sediROM.
 ############################################################
 
 #############################################################
 # bluetooth loosing paired devices workaround
 #
 
-echo "sediROM: starting $0" >> /dev/kmsg
+echo "$(date +%D_%T) - sediROM($0): starting" >> /dev/kmsg
 
 # path where the config and log will be saved
-SEDIDIR=/sdcard/.sediROM/
-BTFLAG=$SEDIDIR/.initialized
+SEDIDIR=/preload/.sediROM/
+
+# if we were not able to use preload as log storage we will use sdcard instead
+SEDISDDIR=/sdcard/.sediROM # if we cannot mount /preload this is a fallback
+INDIMOVED=$SEDISDDIR/dir-moved-2-preload.txt # indicator file to know if we are using preload or not
+[ ! -f $INDIMOVED ] && SEDIDIR=$SEDISDDIR
+
+# set the initialization flag.
+# it will used by boot scripts to detect things right and is a must-have.
+# as this script will be executed in a clean shutdown/reboot only it is necessary to
+# reboot once after sediROM was installed.
+IFLAG=/$SEDIDIR/.initialized
 
 # following the BT fix (will overwrite when differs only). That means if you 
 # want to enforce the backup/restore simply delete/rename the $BTBAK file and reboot.
@@ -23,6 +36,8 @@ WRKDIR=$SEDIDIR/btfix
 BTNAME=00_btbackup.tar
 BTBAK=$WRKDIR/$BTNAME
 LOG=$WRKDIR/part1_shutdown.log
+BTIPATH=$(dirname /data/misc/bluetoothd/*/.)
+BTINDI="$BTIPATH/btfix.indicator"
 
 # ensure or setup working directory
 if [ ! -d "$WRKDIR" ];then
@@ -31,27 +46,32 @@ fi
 
 # do the magic
 echo "$(date +%D_%T): Starting BT fix part1 (shutdown execution).."  > $LOG
-tar cfvp ${BTBAK}.tmp /data/misc/bluetoothd /data/misc/bluetooth 2>&1 >> $LOG
 
-if [ -f $BTBAK ];then 
-    CBAK=$(md5sum $BTBAK |cut -d " " -f1)
-    NBAK=$(md5sum $BTBAK.tmp |cut -d " " -f1)
-    echo "$(date +%D_%T): Old Backup MD5 is $CBAK" >> $LOG
-    echo "$(date +%D_%T): Current MD5 sum is $NBAK" >> $LOG
+# backup when no FORCE CLOSE had occured only!!
+if [ -f "$BTINDI" ];then
+    tar cfvp ${BTBAK}.tmp /data/misc/bluetoothd /data/misc/bluetooth 2>&1 >> $LOG
+    if [ -f $BTBAK ];then 
+        CBAK=$(md5sum $BTBAK |cut -d " " -f1)
+        NBAK=$(md5sum $BTBAK.tmp |cut -d " " -f1)
+        echo "$(date +%D_%T): Old Backup MD5 is $CBAK" >> $LOG
+        echo "$(date +%D_%T): Current MD5 sum is $NBAK" >> $LOG
+    else
+        echo "First time backup. Will create initial setup." >> $LOG
+        cp -vf ${BTBAK}.tmp $BTBAK 2>&1 >> $LOG
+    fi
+    
+    if [ $CBAK != $NBAK ];then 
+        echo "$(date +%D_%T): will create a new backup file because BT has changed." >> $LOG
+        cp -vf ${BTBAK}.tmp $BTBAK 2>&1 >> $LOG
+    else
+        echo "$(date +%D_%T): will not create a new backup file because BT hasn't changed." >> $LOG
+    fi
 else
-    echo "First time backup. Will create initial setup." >> $LOG
-    cp -vf ${BTBAK}.tmp $BTBAK 2>&1 >> $LOG
-fi
-
-if [ $CBAK != $NBAK ];then 
-    echo "$(date +%D_%T): will create a new backup file because BT has changed." >> $LOG
-    cp -vf ${BTBAK}.tmp $BTBAK 2>&1 >> $LOG
-else
-    echo "$(date +%D_%T): will not create a new backup file because BT hasn't changed." >> $LOG
+    echo "$(date +%D_%T): FORCE CLOSE detected. Will NOT backup because $BTINDI is missing!" >> $LOG
 fi
 
 # set the initialization flag. this is absolutely necessary for encrypted
 # devices in order to be able to detect things right
-if [ ! -f $BTFLAG ];then echo "initialized on $(date +%D_%T)" > $BTFLAG ;fi
+if [ ! -f $IFLAG ];then echo "sediROM ($0): initialized on $(date +%D_%T)" > $IFLAG ;fi
 
-echo "sediROM: $0 finished." >> /dev/kmsg
+echo "$(date +%D_%T) - sediROM($0): finished." >> /dev/kmsg
