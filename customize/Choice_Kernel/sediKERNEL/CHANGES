@@ -1,0 +1,30 @@
+
+
+
+Changelog for *KERNEL* within sediKERNEL bootimage
+###############################################################################################
+
+all kernel related changes are tracked @github:
+https://github.com/xdajog/kernel_samsung_i927/tree/sediKERNEL
+
+
+
+Changelog for *RAMDISK* within sediKERNEL bootimage
+###############################################################################################
+
+ics_sediKERNEL_v1.0-build52_xdajog (Release date: 2015-06-16)
+---------------------------------------------------------------------------
+- initial ramdisk taken from litekernel 20130221 (replaced the modules of course)
+- Kernel still the same as in b50
+- less battery drain (lk ramdisk saves battery - reason why still need to be investigated to integrate that in build process instead of hotpatching that way)
+
+
+ics_sediKERNEL_v1.0-build50_xdajog (Release date: 2015-06-02)
+---------------------------------------------------------------------------
+no changes in ramdisk - only new kernel (see above for changelog)
+
+
+ics_sediKERNEL_v1.0-build48_xdajog (Release date: 2015-05-27)
+---------------------------------------------------------------------------
+- initial release based on CM11 kernel by bubor
+- new kernel (see above for changelog)

@@ -1,0 +1,554 @@
+
+v2.0.63 -v2.0.1 (Release date: 2015-06-16)
+--------------------------------------------------
+Major Release
+
+Github detailed changelog (compared with the previous version):
+https://github.com/xdajog/android_i927_sediROM/compare/v1.7...v2.0
+
+Github tag for this version:
+https://github.com/xdajog/android_i927_sediROM/tree/v2.0
+
+[U]Enhancements[/U]
+[LIST]
+[*]first sediROM app (sediROM_boot.apk) inside.. the app itself is extremely simple: a text and a button thats all. When
+sediROM boots the first time a new added init script will detect if this is the first boot and if this is the case it will open
+the sediROM_boot app. Read & follow carefully the hints there!
+you to reboot. May be annoying but due to douzends of changes in v2.0 it is really necessary to point to a clean reboot.
+[*]All scripts related to run sediROM on github now !!!! Starting from v1.7.
+[*]Introduced the first version of sediKERNEL (v1.0) a customized kernel optimized for STOCK ICS so as for sediROM.
+sediKERNEL is based on CM11 kernel made by bubor (so l2_hsic patched, no wakeup delays, OC etc) enhanced by:
+- adding MTP support for STOCK ICS!
+- less battery drain
+[*]default kernel = sediKERNEL v1.0
+[*]Upgraded AROMA from v2.56 to v2.70-RC2 (means compiling 2.70rc2 from the sources!)
+[*]Go DIRECTLY from the installer to the MODIFY mode!
+That means when you choosen the easy installation mode and everything went fine you will get the
+offer to open the modify mode instead of rebooting
+[*]No adb debugging from initial ram disk (security fix)
+[*]No adb debugging as default (security fix)
+[*]Integrated LiteKernel_l2hsicpatched-bubor-r20150506 with L2_HSIC patch included (hopefully fix battery drain)
+The kernel is based on code of 2014-04 afaik also maded by bubor
+[*]Integrated enhanced UCLJ3 stock Kernel (option in modify mode)
+enhancements:
+- init.d support (this enables sediROM bluetooth fix for this kernel)
+- added custom boot animation support
+[*]Migrated and integrated JB 4.2 LiteKernel release-20130221 to sediROM (option in modify mode) which comes with the following changelog:
+(all changes between v1.2.2 to 20130221)
+- Interactive set as default governor ... Wheatley lags on AOSP
+- Added FM Radio Driver
+- Fixed Mic for AOSP
+- Fixed/Added 1.4ghz frequency
+- Fixed/Added Smartassv2
+- Removed USB Whitlists
+- Recoded BLN myself so that there is no need for an app... has in kernel blinking ... 
+- Tons of Cleanup
+- XZ Kernel Compression
+- Removed Wake Lag
+- Fixed and increased Charging Current
+- Tweaked Ondemand for better performance
+- New Storage Setup
+[*]Migrated and integrated JB 4.2 LiteKernel release-20130222 (option in modify mode) which comes with the following changelog.
+HINT: MTP does not work with this kernel. I will not fix that! If you need MTP use release-20130221 or sediKERNEL!
+(all changes between r20130221 to r20130222)
+- Entropy Tweaks inspired by lambgx02s Seeder (for silky smoothness)
+- Memory Managment Tweaks
+- Added Dynamic vsync
+- Zipaligning and Fix permissions at boot (zeppelinrox script)
+- Tons of Kernel Tweaks for Battery life and Performance...
+- IO tweaks...
+- Auto EFS Backup...
+- New Experimental WIFI Management battery saving feature: If at screen off, WIFI is inactive and or using very little traffic, it gets turned off
+  and then on again once you wake device, if battery level is below 50% it will no longer turn wifi on again, if you disable WIFI it will be left alone...
+- Decreased Vibration Intensity (when you boot up device you will feel a slight vibration)...
+- New Experimental CPU Management feature: Frequency get changed according to battery level....
+- No more laggy lock screen drawing ... 
+- Instant wake to lock screen
+- Removed Increase Charging Current mod till more testing can be done
+- Improvements for better battery life
+- Stability
+- Option to Disable WIFI and CPU Control
+- Clear Memory after boot
+- Massive Improvements to: Performance, Battery Life
+- Fixed Battery leak with CPU + WIFI manager
+- Memory Management Improvements 
+- SD card Speed Tweaks
+- Reduced Wake Lag
+- Reduced Stuttering when playing music on screen off
+- CPU-Manager is now enabled by default ... it boosts wake speed manages sleep speed and reduces max speed as your battery diminishes ... the profiles are fully modifiable and all with no battery drain ... 
+- MTP is now the default pc connection ... if you want mass storage change /data/LiteKernel/MTP to "0"
+- Memory management improved .... should also help for battery life
+- frequency with Interactive governor will now stay a little lower ... should help with screen on battery life ....
+[*]crond (provided by busybox) activated to automatize things like in Linux
+init script 00sediROM will prepare the settings, paths etc for crond to start
+and init script 99sediROM will start the crond
+[*]Open Camera will be the only camera app installed by default. HD Ultra camera stays an option in modify mode.
+[*]added this changelog to AROMA installer screen
+[*]added time and date to sediROM dmesg output
+[*]added modify option after easy install in README of the installer zip
+[*]updated sqlite3 binary to v3.8.7.4 (THANKS to user tech128 details: http://forum.xda-developers.com/showpost.php?p=52174054)
+[*]Removed all my own copyright hints and licensed all sediROM scripts under CC BY-SA 4.0 (http://creativecommons.org/licenses/by-sa/4.0) license! Freedom for everyone ;o)
+[*]New script header including new version concept of all sediROM scripts
+[*]Updated SuperSU app and binaries to v2.46
+[*]Installation of SuperSU is now completely based on the original installer to avoid any problems while installing
+[*]Added a new minimalistic terminal app AndroidTerm (https://play.google.com/store/apps/details?id=jackpal.androidterm) which replaces connectbot as default installed terminal app.
+[*]Connectbot will not being installed by default anymore but you can still install it in modify mode.
+Connectbot has many advantages but 1) updating within a ROM is harder then with AndroidTerm and 2) I want to keep it minimal so no ssh, telnet. only a local console.
+BACKUP Connectbot before upgrading when you still want to use it.
+If you want to continue using CB you can upgrade and at the end of the installer select "Start sediROM modify mode"
+and install Connectbot directly after installation (Screen "Main Features" - Section "Tools"). Nevertheless you still need to restore your settings as they are lost.
+[*]Added Ghostery (v1.2.1) - a very fast, stable and anonymous browser (https://www.ghostery.com/en/how-it-works). Will be installed by default!
+[*]Moved Google Chrome to modify mode and not installing by default anymore!
+Chrome is VERY slow on our phone in comparison to other browsers (try to open several tabs & browsing) and last but not least updating it within sediROM is harder then with other browsers.
+BACKUP Google Chrome before upgrading when you do not want to loose settings.
+If you want to continue using Chrome you can upgrade and at the end of the installer select "Start sediROM modify mode"
+and install Chrome directly after installation (Screen "Main Features" - Section "Tools"). Nevertheless you still need to restore your settings as they are lost.
+[/LIST]
+
+[U]Fixes[/U]
+[LIST]
+[*]on first boot bluetooth will be enabled once. This is needed to ensure that /data/misc/bluetoothd/MAC-ADRESS will be created.
+That directory is device specific and will be created by Android when not existent. As the bluetooth fix from this version on
+depending on a indicator file within this directory it is necessary to enforce its creation by enabling bluetooth once.
+This is done within the init script 00sediROM_1stbootDT.
+[*](!) whenever a soft reboot or system force close has happened bluetooth has stopped working. The only workaround was to
+reboot the device. A fix was added which checks every minute if the bluetooth indicator file is there and if not the init
+script for fixing bluetooth will be restarted. This way in worst case scenario of a soft reboot crash after 1 minute latest
+Bluetooth becomes usable again (so no reboot anymore needed).
+Changes:
+- /etc/cron.d/root
+Added:
+- /system/xbin/sedi_btFCdetect.sh
+[*]fixing some problems with encrypted storage detection
+[*]due to a timing issue some early logfiles of sediROM were not got written to /sdcard. The fix was to use /preload instead:
+When sediROM boots the init script 00sediROM_first will try to mount /preload.
+If mounting /preload was successful it will be used for all logs and existing data will be moved to /preload.
+It would be nive to have a symbolic link here but this is not possible across different filesystem types. So there will be
+an indicator created in /sdcard/.sediROM with the hint to goto the /preload for logs instead.
+All scripts within sediROM were modified to check for the existence of this indicator file and dependending on that they use
+/preload or /sdcard for their logging data.
+[*](!) when a soft reboot occured the bluetoothd directory gets trashed, too. If you then rebooted the empty bluetooth settings gets
+backed up and therefore you boot with emtpy BT settings. This was fixed by using an indicator file (btfix.indicator) which
+will be added after booting the first time. When a system shutdown is initiated sediROM will check for this file and as a
+soft reboot would also delete that indicator file it will detect this and backup when this indicator file is still there.
+In other words: when a soft reboot has occured you can safely reboot now and your settings will be there on the next reboot and
+not lost. 
+[*]cosmetics within updater-script output and AROMA
+[*](!) Extreme battery drain caused by Google Play Framework Service.
+This fix is a big one and splitted into 3 parts:
+1) When system booting up /system/xbin/sedi_fix-gplay-drain will be triggered by /system/etc/init.d/00sediROM_first
+2) /system/etc/init.d/00sediROM_first will also enable the cron daemon crond (coming with busybox) so we can automatize things
+   "enable" crond means several things need to be setup first:
+   a) creating a /etc/passwd
+   b) creating /etc/cron.d/
+   c) starting crond as a process
+3) With the now introduced crond we can run the script /system/xbin/sedi_fix-gplay-drain every 8 minutes.
+   This is to ensure that even when Google updates (this will be done SILENTLY! by Google) it's app(s) it will be fixed again on the next cron run.
+   /system/etc/cron.d/root contain's the magic line for that.
+For details checkout the original thread here:
+http://muzso.hu/2014/09/18/how-to-fix-the-partial-wakelock-problem-on-cyanogenmod-11-with-google-play-services-and-o
+http://forum.xda-developers.com/showpost.php?p=53881089
+http://www.imoseyon.com/2011/02/cron-on-android-is-awesome.html
+[*]init.d scripts cleanup. 00sediROM_tweaks in the installer package under /system was never used because always replaced by the BTfix one.
+I moved the both scripts 00sediROM_first and 00sediROM_last to /system/etc/init.d/ instead of havin them within BTfix.
+All this is firstly cosmetic only but becomes more and more important to have things clear for coding.
+[*]Removed the option to install Cranium & IcePop Bluetooth (was for testing purposes only)
+[*]compat linkage when coming back from JB now respecting it's existence. That means it will check first and do the links when needed only.
+[*]RNGD's init script was blocking for 30s the next boot scripts (changed to 3s intervalls)
+[*]changed order for the BT fix init script (from 99 to 92)
+[*]the 00 sediROM init script was not respecting encryption state which itself is not a problem but as the switch to /preload is happening in this
+version this has result in problems. The fix was to check for encryption state and /data/misc before proceeding
+[*]fixing enhancing databases coming with init script 16sqlite:
+- sqlite3 binary was not working (since literom days....!) and therefore replaced!
+- when /data and/or /sdcard is encrypted no enhancements had taken place (now respecting encryption state and wait until decrypted)
+[*]installer: When FULL-wiping all init scripts were not executed because of missing /preload/.sediROM and /sdcard/.sediROM. Those directories are
+created by the installer now or when they exist the following files gets deleted instead:
+- /preload/.sediROM/.initialized
+- /preload/.sediROM/dir-moved-2-preload.txt
+- /sdcard/.sediROM/.initialized
+- /sdcard/.sediROM/dir-moved-2-preload.txt
+[*]installer: When PARTLY-wiping all init scripts were not executed because of missing /preload/.sediROM and /sdcard/.sediROM. Those directories are
+created by the installer now or when they exist the following files gets deleted instead:
+- /preload/.sediROM/.initialized
+- /preload/.sediROM/dir-moved-2-preload.txt
+- /sdcard/.sediROM/.initialized
+- /sdcard/.sediROM/dir-moved-2-preload.txt
+[*]BETA-related (fix affects BETA release only): litekernels in modify mode could not be installed (therefore may soft bricked the phone!)
+[*]RFKILL switch desc added inside 92sediROM_btfix, slightly modified the log output too
+[*](!) Not everything was cleaned/removed when UN-ROOT was selected. The uninstallation/unrooting will remove all related parts now including dalvik cache etc.
+[*]daemon mode in install-recovery.sh makes no sense in sediROM as it is not SDK 18+ and no selinux forced therefore removed
+[*]When switching the kernel the modules within /system/lib/modules/ were not deleted (e.g. dhd.ko) which could had caused trouble in rare situations.
+The installer now deletes all modules when switching to another kernel
+[*]BETA-related (fix affects BETA release only): new sediKERNEL version (v1.0 build 50). Change: wifi as kernel module instead builtin.
+[*]On encrypted devices the installer was not able to mount /data and /sdcard. Now it will:
+- check for the existence of dm-0 and dm-1 which are the unlocked /data and /sdcard partitions
+- when they can be found they will be mounted and used accordingly and correctly
+- when they can NOT be found an abort is raised to avoid data loss - 3 hints are given to solve the situation
+- you N--E--E--D sediTWRP - Clockworkmod cannot unlock encrypted devices and "normal" TWRP versions are not able to unlock STOCK ROM encryption!!
+--> sediTWRP can be downloaded here: http://forum.xda-developers.com/showthread.php?t=3007035
+[*]installer: When upgrading / partial wiping the system partition will be deleted at the END now. This is to avoid data loss e.g. when you have an encrypted
+device and not unlocked the partitions in sediTWRP (or when using CWM or other "normal" TWRP versions)
+[*]installer: When normal installing / full / recommended wiping the system partition will be deleted after successful mount of /data and /sdcard first.
+This is to avoid data loss e.g. when you have an encrypted device and not unlocked the partitions in sediTWRP (or when using CWM or other "normal" TWRP versions)
+[*]installer cosmetics:
+- Easy installation description changed
+- "Recommended Wipe" renamed to "Clean install / Recommended Wipe"
+- "Partial Wipe" renamed to "Upgrade mode / Partial wipe"
+[/LIST]
+
+
+v1.7.6 - v1.7.1 (2015-02-02)
+--------------------------------------------------
+Bugfix Release
+
+Github detailed changelog:
+https://github.com/xdajog/android_i927_sediROM/compare/4348ed3459a486c13d59ca93d179952900de08d3...v1.7
+
+Github tag for this version:
+https://github.com/xdajog/android_i927_sediROM/tree/v1.7
+
+[U]Fixes[/U]
+[LIST]
+[*]security-fix(!): scripts in /etc/init.d/ were writable to all users
+A user who has no root permissions could gain root access by editing the code of an init.d script.
+This issue exists in all previous version and also in LiteROM where sediROM is based on.
+It is highly recommended to upgrade to this version for better security!
+[*]security-fix(!): /system was mounted read-writeable which was a potential security hole
+The system partition should be mounted as read-only only because we never (usually) want to change things here.
+Leaving it writable could open the door for several system related manipulations.
+It is highly recommended to upgrade to this version for better security!
+[*]fix: bootanimation doesn't changed when device encryption has been activated
+[*]fix: DEV Area completely removed. Stopped to work since v1.1 or so and will not be supported anymore.
+[*]fix(!): Under some circumstances the Bluetooth fix hasn't worked as expected.
+In short:
+"rm" will delete the directory and I'm not able to find out which file will be deleted first and therefore I can't prevent the deletion of the pairings as I do before!
+
+Background:
+/system/bin/bluetoothd will remove the whole directory /data/misc/bluetoothd (well that is known and at the end the reason why the pairings gets lost in ICS)
+I "fixed" that by making the config file immutable so Android is not able to delete the directory anymore which results in the fact that the pairings will stay!
+Unfortunately it is not such easy as thought. On my second device I saw that my pairings still get lost..
+
+Well ... As mentioned bluetoothd wants to remove and it uses "rm -r" for this. Exactly it will call "rm -r  /data/misc/bluetoothd/".
+.. and "rm" uses the C function "readdir()" when it parses the directory and readdir() will give you the result randomly (it depends on several not predectivable things).
+There is no chance to know the exact order and even when it would be the case then mine would be different from yours!
+... but that's not all. Some docs said that subdirs will be deleted first when using "rm -r" but in fact that is NOT true! If it would be true then the solution would be very easy.
+
+The question stays why it happens on my productive phone and the previous fix still working fine on my DEV device. I believe that it is because I restored a previous made BT backup after I installed sediROM v1.6.
+The command "tar" uses the same behaviour as readdir() so it is also randomly when it comes to restoring a backup. That would explain it maybe but I'm not totally sure.
+
+You can test that readdir() behaviour very easily. If you execute a "find . -type f -print" you will see what readdir() see.. The result is obviously unsorted.
+Execute it again and the result stays the same but that changes when files are deleted or other things happens to the filesystem!
+In my case the problem occured after enabling encryption because that changes also things related to readdir() obviously.
+
+Further readings:
+- http://linux.die.net/man/3/readdir
+- http://utcc.utoronto.ca/~cks/space/blog/unix/ReaddirOrder
+- http://stackoverflow.com/questions/8977441/does-readdir-guarantee-an-order
+
+The way of finding a solution:
+- I tried to find out the root cause again (means bluez Java code).
+- I tried to port the latest v4 of the bluez stack which contains a lot of fixes.
+- I tried to re-compile bluetoothd in order to remove the whole folder deletion.
+- I tried to save/restore the settings.db sqlite3 database (alone and together with the BT files)
+- I tried some other stupid things.
+
+The solution:
+At the end I found a working solution (again). Instead of protecting a single file only which readdir() accesses randomly I switched over to protect the whole directory.
+This way the order within the directory doesn't matter anymore
+That alone wasn't enough. I needed to completely restructure the way of handling that fix.
+
+That means:
+- the bluetooth main.conf was changed to set InitiallyPowered=false !
+- I stop all bluetooth related processes when booting
+- I restore the previous BT settings and pairings
+- I make the BT dir(!) immutable
+- Then I give rfkill0/state the info (add a "1") that bluetooth is able to start
+- Then I start all BT processes in correct order
+- Then I remove the immutable bit from the BT dir
+
+(Minimal) Caveats:
+- Bluetooth will from now on always beeing OFF after a restart. That is wanted and nothing really bad and is a protection that things goes right.
+After sediROM is up'n'running you can switch on BT and/or off again - only when rebooting BT will be always off again.
+- The system needs to be fully started in order to get BT working. As this is only a couple of seconds (about 10-20 sec) and starts while in boot process this has no impact for the user.
+[/LIST]
+
+[U]Enhancements[/U]
+[LIST]
+[*]new: As a side effect of the major BT fix we can change the BT name now and it will be saved and restored like the pairings, too.
+[/LIST]
+
+
+v1.6.21 - v1.6.17 - 2015-01-08
+---------------------------------------------------
+Bugfix Release
+
+[U]Fixes[/U]
+[LIST]
+[*]fix(!): due to a bug in updater-binary 'delete_recursive' will not delete correctly folders. delete_recursive was replaced by "rm -r" and/or a full format of a partition when needed.
+Before this fix problems could have been occured with:
+- not cleaning /data (recommended/full wipe in "Easy Installation" mode)
+- not cleaning /cache (recommended/full wipe, Partial Wipe in "Easy Installation" mode and also <No wipe> in "Modify Installation" mode)
+- not deleted old / wrong supersu/superuser files when the No-Root mode selected (within "Easy" and "Modify" Installation mode)
+[*]fix: removed superseeded btfix detection code in installer (we use format as fallback which working fine)
+[*]fix: when you want to change the bootanimation to the AOSP default the old one was used because the old bootanimation was not removed
+[*]fix: Renamed bootanimation "Android default" to "AOSP default" because it is more clear
+[/LIST]
+
+[U]Enhancements[/U]
+[LIST]
+[*]
+[/LIST]
+
+v1.6.16 - v1.6.0 - 2015-01-07
+---------------------------------------------------
+Important Bugfix Release
+
+[U]Fixes[/U]
+[LIST]
+[*]fix(!): partial wipe (needed when upgrading) was causing several problems in v1.1 and v1.5. installer at this part completely re-worked.
+[*]fix: phone app was crashing when noise reduction option was selected in installer
+[*]fix: sometimes black screens when using quickpic gallery
+[*]fix: cosmetics in installer and in changelog
+[*]fix: when upgrading sediROM the atom launcher settings got overwritten (occured when upgrading to v1.5)
+[/LIST]
+
+[U]Enhancements[/U]
+[LIST]
+[*]new: updated quickpic to build 3.9.2 and converted to system app
+[*]new: Remember last noise reduction choice -> When you select the Noise reduction option in the installer the phone remembers the last choice (off or on)!
+[/LIST]
+
+
+v1.5.23 - v1.5.0 - 2014-12-24
+---------------------------------------------------
+Big Maintenance release
+
+[U]Fixes[/U]
+[LIST]
+[*]fix(!): various problems around superuser/su --> SWITCHED BACK TO chainfire SUPERSU again!! (and upgraded it to v2.40)
+[*]fix: kii keyboard working now! Will be installed together with the Samsung keyboard in easy installer.
+[*]fix(!): annoying and WRONG failure message when reboot option was selected in aroma installer
+[*]fix: added the option to disable phone noise reduction by default (can be enabled again within call at anytime)
+[*]fix: removed grakernel and ardatdat kernel from within modify mode
+[*]fix: removed grakernel and ardatdat kernel from the install package
+[*]fix: un-rooting option missed some files and folders
+[/LIST]
+
+[U]Enhancements[/U]
+[LIST]
+[*]new: updated ancient chrome browser version to build 39.0.2171.93 (inluding newest libchromeview.so)
+[*]new: updated es file explorer to build 3.2.3.1
+[*]new: added connectbot as local terminal app + ssh client
+[*]new: added HD Camera ULTRA build 2.2.2 (default cam in easy installation mode)
+[*]new: added Open Camera build 1.21.1 (default cam in easy installation mode)
+[*]new: updated Atom Launcher to build 2.2.2
+[*]new: added Atom IRON Theme build 1.1
+[*]new: added another VERY clear warning message for the unsupported DEV/advanced install mode
+[*]new: added Stock UCLJ3 kernel (modify mode only)
+[*]new: re-ordered stock kernel installation because we now have 2 stock kernels inside
+[*]new: enabled adb debug by default - for the default kernel in easy installation mode only!
+[*]new: added bubor's CM11 kernel to the modify mode (not recommended to use atm!)
+[*]new: modified bubor's CM11 kernel to autostart with adb debug enabled
+[*]new: added kii keyboard to the easy install (samsung + kii will be installed)
+[/LIST]
+
+v1.1.14 - v1.1.0 - 2014-10-21
+---------------------------------------------------
+Bugfix release
+
+[U]Fixes[/U]
+[LIST]
+[*]fix(!): modify installation menu does not work (e.g. the most apps and tweaks are ignored!)
+[*]fix(!): device encryption was possible but system does not boot up afterwards
+        This was caused and beeing fixed in 2 boot scripts:
+        - The BT fix script needs to remount /data (regardless of /data is still locked or not)
+        - The RNGD script which remounts several partitions while booting (regardless of /data is still locked or not)
+        Both scripts are adapted so they respecting device encryption now
+[*]fix: moved BT-Fix backup folder to /sdcard. That solves several issues and most important
+        one of the conflicts with device encryption
+[*]fix: dalvik cache cannot be wiped when trying to upgrade
+[*]fix: dalvik cache error when it is empty (e.g. when you choosen easy install and directly modify afterwards)
+[*]fix: Added a hint in modify and dev area regarding kii keyboard crashes whole system when installed this way (really strange..)
+[/LIST]
+
+[U]Enhancements[/U]
+[LIST]
+[*]new: more verbosity in install log
+[*]new: README updated 
+[/LIST]
+
+
+v1.0.57 - 2014-09-02
+---------------------------------------------------
+v1.0.57_RC2 is marked as the first stable version of sediROM v1.0
+This is only a tagging - no new version.
+
+
+v1.0.57-v1.0.53 - 2014-08-22
+---------------------------------------------------
+Second Release Candidate version! (v1.0.57_RC2)
+
+[U]Fixes[/U]
+[LIST]
+[*]fix: updated libsec-ril.so - now network unlocking works again
+        That means if you had tried to network unlock the cappy by using the bit-flip method
+        ([url]http://forum.xda-developers.com/showthread.php?p=33946733[/url]) it may have failed because of a new
+        method of detection within ICS. Thanks to Phoenix84118.
+        (Very great in my case because my development captivate fully works now - like my production one..)
+[*]fix(!): when the installer was not able to wipe /system or /data etc then it has still continued! 
+           That had resulted in an incomplete or corrupt installation 
+        fixes bug: 'Sometimes /system cannot be fully flashed'
+[*]fix: when the /data partition was (still) mounted and you tried to re-install sediROM the installer failed 
+        cause of failing to mount /data..
+[*]fix: when /system /data or /cache is corrupt in any way sediROM has aborted. This itself is useful but 
+        it is only necessary when sediROM is not able to WIPE them. this is fixed now.
+[*]fix: when /system cannot be wiped by the "delete" function sediROM was not able to continue
+        /system will be formatted now instead of using delete function. This could also improve speed btw.
+[*]fix: bug 'voodoo sound control missing'
+[*]fix: log output was not easy to read anymore because of the mount/format/delete fixes
+[/LIST]
+
+v1.0.52 - v1.0.38 - 2014-07-23
+---------------------------------------------------
+First Release Candidate version! (v1.0.52_RC1)
+
+[U]Enhancements[/U]
+[LIST]
+[*]new: renamed advanced mode to "DEV Area" to ensure no one will use it ;o)
+[*]new(!): completely new non-rooted mode as requested by xda user <fargin bastage> ;o) and to be honest for every
+        real enterprise user. There are many Apps out there which may not run on rooted phones
+        and even hiding root does not work evertime. That and the fact that you want to run a custom rom but
+        still be complain (as much as it can be with a custom rom) to your company's sec pol this mode is the one you want.
+        Yes it's true even installing a custom rom can be a sec pol break in your company but well sediROM is as stock as
+        possible. If you do not trust me the only choice is to install the pure stock instead :o)
+        This new mode is available in all modes: "Easy installation", "DEV Area" & in "Modify installation"
+[*]new: fully automatic version number replacement in build.prop
+[*]new(!): completely replaced superuser app! 
+        Two reasons for this step: The current chainfire SuperSU app requires the pro version to get titanium and 
+        other apps working. That means today it is Titanium and tomorrow?
+        Superuser should be open source. It's the gateway to root on your device. It must be open for independent security 
+        analysis. Obscurity (closed source) is not security!
+        Because of this I switched to the full opensource Clockworkmod superuser app instead.
+[*]new: reactivated /preload preparation:
+     - format with ext4
+     - if the partition can be mounted it will not formatted again but content deleted only
+     - nothing more atm - see roadmap for sediROM v2
+[*]new(!): error handling when wiping! That means if wiping fails it aborts now!
+     That was driving me nuts again. Edify scripting is not always stright forward and at least for me the assert function 
+     simply does not work. Bugs and bugs again. First in Aroma (ini_get) and now in update-binary arrg. So I created a
+     workaround to be able to catch errors. The result is that mounting and some other steps will be monitored and the 
+     installer will abort now. Very important feature because if wiping or mounting will fail then an installation should not
+     continue and that will be respected now.
+[*]new: writing the installation log always to /sdcard - that does not affect "Save Logs" button in installer
+[/LIST]
+
+[U]Fixes[/U]
+[LIST]
+[*]fix: changed recommended keyboard in dev mode
+[*]fix: description for green boot logo
+[*]fix(!): the BT HSP permissions were overwritten by the installer so can't be executed!
+[*]fix: removed an old BT HSP fix script which is totally superseeded
+[*]fix(!): When never used BT HSP fix before no backup was created 
+[*]fix: BT HSP fix was not able to restore all file permissions correctly
+[*]fix: permission setup for some dirs failed
+[*]fix: kii keyboard in dev area mode was still selected
+[*]fix: finish message in installer said successful even when an error occured
+[*]fix: when sediROM was installed before and you try to wipe then the /data cannot be wiped.. That could also be the case when 
+     you try to install another ROM which do not format but delete /data only.
+[*]fix: some cosmetics within installer messages
+[/LIST]
+
+
+v1.0.37 - v.1.0.5 - 2014-07-18
+---------------------------------------------------
+
+[LIST]
+[*]new(!): completely new build method based on archikitchen
+[*]new: using aroma 2.56 instead of 2.50
+[*]fix(!): due to a bug in the updater-script no features in modifying mode weren't installed when selected  
+[*]new: restructered automatism for updating build.prob
+[*]fix: due to problems with kii keyboard when installing in aroma I switched back to samsung keyboard as default
+[*]fix: removed preload preparation due to errors in installer
+[*]fix: green particles boot animation was not working - fixed in all modes
+[*]new: introduced the easy installation mode! ;o)
+[*]new: switched installer theme to miui, replaced all icons with better fitting ones
+[*]fix: full wipe failed in v1.0.19
+[*]new: prepared for using /preload
+[*]new: leavin ALPHA state - now in BETA :o)
+[*]new: added UCLJ3 Stock Kernel (not selectable atm)
+[*]fix(!): baseband was completely lost /gets not installed since v1.0.9 (I think). That happened when full wiping only and is fixed now.
+[*]fix: unabled to save the installation log 
+[*]new: several debug enhancements for BT fix
+[*]fix: debug log was not deleted for BT fix boot part
+[*]new: completely new check system for BT fix (not on file size but on md5 which is absolutely more resistent)
+[*]fix(!): woah kii keyboard was missing in package.. sorry! the latest and greatest now inside.
+[*]new: updated ES File Explorer!
+[*]new: updated Atom Launcher
+[*]fix: installer removes kernel / phone will not boot up :-/ Thats why I said it's Alpha..
+[*]     keep in mind: if you not use the recommended (preselected) settings when flashing you may brick your phone again 
+[*]     so
+[*]     1) DO A NANDROID BACKUP
+[*]     2) COPY THAT BACKUP TO AN EXTERNAL DEVICE TOO !!!! --> SAVED MY DAY TODAY BECAUSE OF MD5 MISMATCHES THAT CAN HAPPEN..
+[*]     3) ENSURE THAT YOUR BACKUP IS FULLY OK (e.g. md5sum -c nandroid.md5) in BOTH places (on the Glide on on your external ressource)
+[*]     4) You should have a windows box running Odin + CWM6) near - just for the case. TWRP is not such bulletproof then CWM in my case..
+[*]new: cleaned up installer menu options and added Recommended(DD) tags and other hints
+[*]new: prepared for uploading/relaeasing
+[*]new: UNTESTED!!!! added ardatdat 1.2 and 4.0 kernel
+[*]     features: [url]http://forum.xda-developers.com/showthread.php?t=1848677[/url]
+[*]new: UNTESTED!!!! added grakernel 1.4.3
+[*]     features: [url]http://forum.xda-developers.com/showthread.php?t=2405306[/url]
+[*]fix: whooa the BT HSP fix was not fully implemented but now all-in.. pfuh..
+[*]new: added ardatdat kernels as on option (completely untested)
+     ardatdat_v4.1
+     ardatdat_v4.2b6
+[*]fix: updating props changed
+[*]fix: output in update-script (design)
+[*]new: forcing modem installation after kernel update! That means when you choose to (re-)install a kernel you will get
+     the modem screen otherwise not.
+[*]fix: removed old pacman modem installer
+[*]new: added first test for updating romversion automagically when installing/modifying
+[*]fix: when modifying and do not choosen GPS tweaks the installer failed
+[*]fix: removed icepop modem completely
+[*]new: added an option for executing scripts on shutdown (place them in /system/etc/shutdown/)
+     --> all the efforts go here: [url]http://forum.xda-developers.com/showthread.php?t=1387692[/url]
+[*]fix: typo in aroma installer info message
+[*]fix: Aroma issue while installing v1.0.5
+[*]new: removed the Camera as a required reinstall component 
+[*]new: now all things in the "Main features" section are totally optional when reinstalling/modifying
+[*]new: removed all default selections in the tweaks section when reinstalling/modifying
+[*]new: added a reboot hint when modifying completed
+[*]fix: removed IcePop Modem because it's not working
+[*]new: 	added a new menu option to reinstall the original Bluetooth package
+[*]new: 	added an option to install the IcePop v1.4 Bluetooth package
+[*]new: 	added an option to install the Cranium Bluetooth package
+[*]new: 	added an option to install the radio of PACman rom (Jelly Bean!! DO NOT USE THIS until tested)
+[*]new: 	added a changelog (this file)
+[/LIST]
+
+
+v1.0.4 - v1.0.0
+---------------------------------------------------
+
+There are several releases done here. At the beginning I was too lazy to write down every change but I started to build sediRom
+somewhen in May 2014 - I think so..
+
+[LIST]
+[*]new:	renamed LiteRom to sediROM to make clear that this is a fork from now on
+[*]new:	If you have installed sediROM and want to modify/add new features you can do so by choosing the ZIP in CWM again and
+	you will be guided by the Aroma installer. While this is not a new feature (LiteRom already use that feature) several
+	new options are added here:
+	- You are not forced to re-install a kernel everytime
+	- You are not forced to re-install the Launcher
+[*]new: 	added an option to install different kernels:
+	renamed the original LiteRom Kernel to: "LiteKernelv1.2.2_LR-0.9"
+	"LiteKernelv4.0_noUV-OC" (LiteKernel v4.0 OverClocked and without UnderVoltage)
+        "LiteKernelv1.2.2_UV-noOC" (LiteKernel v1.2.2 not OverClocked and with UnderVoltage)
+        "LiteKernelv1.2.2_UV-gpuOC" (LiteKernel v1.2.2 GPU OverClocked and with UnderVoltage)
+[*]new:	changed several default options to fit better (in my case). e.g. choosing Europe for GPS
+[*]new:	added Kii Keyboard as an Option
+[*]new: 	added Atom Launcher as an Option (default when new install)
+[*]fix:	removed swype keyboard because it's trial version is over
+[*]fix:	removed Toggle 2G/3G because it does not work correct
+[*]fix:	fixed many descriptions especially the Modifying installation part (before it was named "Modify installation" 
+	which one can think of that you also can remove things but that is not possible atm - you can add/reinstall things only)
+[/LIST]

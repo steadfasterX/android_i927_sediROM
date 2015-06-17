@@ -1,10 +1,37 @@
-############################################################
+#############################################################################################################################
 #
-# Copyright (c) 2014-2015 by xdajog, www.se-di.de
-# All rights reserved.
+# Author:   Thomas Fischer (xdajog) <mail@se-di.de>
+# Desc:		This code is part of sediROM (http://forum.xda-developers.com/showthread.php?t=2789727)
 #
-# This script is part of sediROM.
-############################################################
+# License:  This code is licensed under the Creative Commons License CC BY-SA 4.0.
+#
+# DISCLAIMER:
+# The following deed highlights only some of the key features and terms of the actual license.
+# It is NOT a license and has NO legal value. You should carefully review ALL of the terms and conditions of the actual
+# license before using the licensed material.
+#
+# Please check the following link for details and the full legal content:
+# http://creativecommons.org/licenses/by-sa/4.0/legalcode
+#
+#    You are free to:
+#
+#       Share — copy and redistribute the material in any medium or format
+#       Adapt — remix, transform, and build upon the material
+#
+#       for any purpose, even commercially.
+#       The licensor cannot revoke these freedoms as long as you follow the license terms.
+#
+#    Under the following terms:
+#
+#       Attribution:
+#          You must give appropriate credit, provide a link to the license, and indicate if changes were made.
+#          You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+#
+#       ShareAlike:
+#          If you remix, transform, or build upon the material, you must distribute your contributions under the same
+#          license as the original.
+#
+#############################################################################################################################
 
 ui_print("@");
 ui_print("@  sediROM");
@@ -15,6 +42,7 @@ unmount("/system");
 unmount("/data");
 unmount("/cache");
 unmount("/preload");
+unmount("/sdcard");
 
 ui_print("@  [*] Preparing setup...");
 package_extract_dir("setup", "/tmp");
@@ -27,7 +55,27 @@ ui_print("@  [*] Partly Mounting Partitions...");
 if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p6", "/data") != "0"
 	then
 		ui_print("@  [*] ... mounting /data partition failed");
-		ui_print("@      --> well that alone is not a problem");
+		ui_print("@      ... maybe its encrypted. Lets check ...");
+		if run_program("/sbin/busybox", "ls", "/dev/block/dm-0") == 0
+		then
+				ui_print("@      ... found encrypted /data partition");
+				if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/dm-0", "/data") != "0"
+				then
+						ui_print("@    ... mounting encrypted /data partition failed!!! ABORTED TO AVOID DATA LOSS!");
+						ui_print("@    1) Have you entered the enc password when sediTWRP booted? DO IT!");
+						ui_print("@    2) Do you use Clockworkmod Recovery? USE sediTWRP!!!");
+						ui_print("@    3) If you have loosed your enc password wipe /data (all your settings getting lost!) in sediTWRP and re-try!");
+						abort()
+				else
+						ui_print("@      ... sucessfully mounted encrypted /data partition");
+				endif;
+		else
+				ui_print("@    ... /data partition not encrypted and not mountable! ABORTED TO AVOID DATA LOSS!");
+				ui_print("@    1) Have you entered the enc password when sediTWRP booted? DO IT!");
+				ui_print("@    2) Do you use Clockworkmod Recovery? USE sediTWRP!!!");
+				ui_print("@    3) wipe /data (all your settings getting lost!) in sediTWRP and re-try!");
+				abort()
+		endif;
 		#abort()
 	else
 		ui_print("@      ... sucessfully mounted /data partition");
@@ -37,8 +85,68 @@ endif;
 if
 	  file_getprop("/tmp/aroma/wipe.prop","selected.1") == "1"
 then
-	  ui_print("@  [*] Performing Full Wipe...");
-		ui_print("@  [**] /system partition will be formatted..");
+		ui_print("@  [*] Performing Full Wipe...");
+	  	ui_print("@  [*] First cleaning sediROM files...");
+
+		# preparing sediROM fallback directory and wipe old indicator files
+		if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p4", "/sdcard") != "0"
+		then
+			ui_print("@  [*] ... mounting /sdcard partition failed. Already mounted?");
+			ui_print("@      ... Lets check if it is (still) mounted...");
+			
+			if run_program("/sbin/busybox", "grep", "mmcblk0p4", "/proc/mounts") == 0
+				then
+				ui_print("@      ... ok /sdcard already/still mounted");
+		    else
+				ui_print("@      ...hm no. maybe its encrypted. Lets check ...");
+				if run_program("/sbin/busybox", "ls", "/dev/block/dm-1") == 0
+				then
+						ui_print("@      ... found encrypted /sdcard partition!!!");
+						ui_print("@      ... and we're in full installation mode: ABORTED TO AVOID DATA LOSS!!!");
+						ui_print("@    1) Boot normally and DECRYPT your device in settings. Then re-try!");						
+						ui_print("@    2) If 1. is not possible and you want to continue wipe /sdcard MANUALLY! I will NOT do that!");
+						ui_print("@    3) Do you use Clockworkmod Recovery? USE sediTWRP!");
+						abort()
+				else
+						ui_print("@    ... /sdcard partition not encrypted and not mountable! ABORTED TO AVOID DATA LOSS!");
+						ui_print("@    1) Device encrypted? -> Boot normally and DECRYPT your device in settings. Then re-try!");						
+						ui_print("@    2) If 1. is not true or possible and you want to continue wipe /sdcard MANUALLY! I will NOT do that!");
+						ui_print("@    3) Do you use Clockworkmod Recovery? USE sediTWRP!");
+						abort()
+				endif;
+		    endif;
+			
+		else
+			ui_print("@  [*] ... sucessfully mounted /sdcard partition");
+		endif;
+		if run_program("/sbin/busybox", "ls", "/sdcard/.sediROM/dir-moved-2-preload.txt") == 0 
+		then
+			if run_program("/sbin/busybox", "rm", "-r", "/sdcard/.sediROM/dir-moved-2-preload.txt") != 0
+			then
+				ui_print("@  [*] ERROR deleting /sdcard/.sediROM/dir-moved-2-preload.txt! ABORTED!");
+				abort();
+			else
+				ui_print("@  [*] ... successfully wiped /sdcard/.sediROM/dir-moved-2-preload.txt");
+			endif;
+		else
+				ui_print("@  [*] ... no /sdcard/.sediROM");
+				ui_print("@  [*] Preparing usage of sediROM dir...");
+				run_program("/sbin/busybox", "mkdir", "-p", "/sdcard/.sediROM");			
+		endif;
+		if run_program("/sbin/busybox", "ls", "/sdcard/.sediROM/.initialized") == 0 
+		then
+			if run_program("/sbin/busybox", "rm", "-r", "/sdcard/.sediROM/.initialized") != 0
+			then
+				ui_print("@  [*] ERROR deleting /sdcard/.sediROM/.initialized! ABORTED!");
+				abort();
+			else
+				ui_print("@  [*] ... successfully wiped /sdcard/.sediROM/.initialized");
+			endif;
+		else
+				ui_print("@  [*] ... no /sdcard/.sediROM");
+		endif;	  
+
+		ui_print("@  [**] /system partition will be wiped..");
 			if run_program("/tmp/sedi_mke2fs", "-m2", "-T", "ext4", "/dev/block/mmcblk0p2") != "0"
 			then
 				ui_print("@      ERROR wiping /system partition! ABORTED!");
@@ -58,6 +166,52 @@ then
 				endif;
 			endif;
 
+		ui_print("@  [**] pre-checking /data ..");
+		ui_print("@      ... Lets check if it is (still) mounted...");
+		if run_program("/sbin/busybox", "grep", "mmcblk0p6", "/proc/mounts") == 0
+			then
+			ui_print("@      ... ok /data already/still mounted");
+		else
+			ui_print("@      ...hm no. maybe its encrypted. Lets check ...");
+			if run_program("/sbin/busybox", "ls", "/dev/block/dm-0") == 0
+			then
+					ui_print("@      ... found encrypted /data partition!!!");
+					ui_print("@      ... and we're in full installation mode: ABORTED TO AVOID DATA LOSS!!!");
+					ui_print("@    1) Boot normally and DECRYPT your device in settings. Then re-try!");						
+					ui_print("@    2) If 1. is not possible and you want to continue wipe /data MANUALLY! I will NOT do that!");
+					ui_print("@    3) Do you use Clockworkmod Recovery? USE sediTWRP!");
+					abort()
+			else
+					ui_print("@    ... /data partition not encrypted and not mountable! ABORTED TO AVOID DATA LOSS!");
+					ui_print("@    1) Device encrypted? -> Boot normally and DECRYPT your device in settings. Then re-try!");						
+					ui_print("@    2) If 1. is not true or possible and you want to continue wipe /data MANUALLY! I will NOT do that!");
+					ui_print("@    3) Do you use Clockworkmod Recovery? USE sediTWRP!");
+					abort()
+			endif;
+		endif;
+
+		ui_print("@  [**] /data partition will be wiped..");
+		unmount("/data");
+		if run_program("/tmp/sedi_mke2fs", "-m2", "-T", "ext4", "/dev/block/mmcblk0p6") != "0"
+			then
+					ui_print("@      ERROR wiping /data partition! ABORTED!");
+					abort();
+			else
+					ui_print("@      ... sucessfully wiped /data");
+					run_program("/tmp/sedi_tune2fs", "-c80", "-i0", "/dev/block/mmcblk0p6");
+					ui_print("@      ... tuned /data");				
+					# ensure mount point exists.. No error when exists:
+					run_program("/sbin/busybox", "mkdir", "-p", "/data");
+					if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p6", "/data") != "0"
+						then
+							ui_print("@      ERROR mounting /data partition!");
+							abort()
+						else
+							ui_print("@      ... sucessfully mounted /data partition");
+					endif;
+		endif;
+
+
 	ui_print("@  [**] /cache partition will be formatted now..");
 	if run_program("/tmp/sedi_mke2fs", "-m1", "-T", "ext4", "/dev/block/mmcblk0p3") != "0"
 		then
@@ -76,27 +230,6 @@ then
 				else
 					ui_print("@      ... sucessfully mounted /cache partition");
 			endif;
-	endif;
-
-	ui_print("@  [**] /data partition will be formatted now..");
-	unmount("/data");
-	if run_program("/tmp/sedi_mke2fs", "-m2", "-T", "ext4", "/dev/block/mmcblk0p6") != "0"
-		then
-				ui_print("@      ERROR wiping /data partition! ABORTED!");
-				abort();
-		else
-				ui_print("@      ... sucessfully wiped /data");
-				run_program("/tmp/sedi_tune2fs", "-c80", "-i0", "/dev/block/mmcblk0p6");
-				ui_print("@      ... tuned /data");				
-				# ensure mount point exists.. No error when exists:
-				run_program("/sbin/busybox", "mkdir", "-p", "/data");
-				if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p6", "/data") != "0"
-					then
-						ui_print("@      ERROR mounting /data partition!");
-						abort()
-					else
-						ui_print("@      ... sucessfully mounted /data partition");
-				endif;
 	endif;
 
 	  	# introducing preload. format is absolutely recommended so we do so
@@ -119,6 +252,8 @@ then
 					ui_print("@      ... sucessfully mounted /preload partition");
 					ui_print("@  [*] Preparing usage of /preload...");
 					run_program("/sbin/busybox", "mkdir", "-p", "/preload/system/app");
+				    run_program("/sbin/busybox", "mkdir", "-p", "/preload/.sediROM");
+
 			endif;
 		endif;
 endif;
@@ -178,6 +313,134 @@ if
 	  file_getprop("/tmp/aroma/wipe.prop","selected.1") == "2"
 then
     ui_print("@  [*] Performing Partial Wipe:");
+	
+	# preparing sediROM fallback directory and wipe old indicator files
+	if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p4", "/sdcard") != "0"
+	then
+		ui_print("@  [*] ... mounting /sdcard partition failed. Already mounted?");
+		ui_print("@      ... Lets check if it is (still) mounted...");
+		if run_program("/sbin/busybox", "grep", "/sdcard", "/proc/mounts") == 0
+		then
+				ui_print("@      ... ok /sdcard already/still mounted");
+		else
+				ui_print("@      ... hm no. maybe its encrypted. Lets check ...");
+				if run_program("/sbin/busybox", "ls", "/dev/block/dm-1") == 0
+				then
+						ui_print("@      ... found encrypted /sdcard partition");
+						if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/dm-1", "/sdcard") != "0"
+						then
+								ui_print("@      ... mounting encrypted /sdcard partition failed!!! ABORTED TO AVOID DATA LOSS!");
+								ui_print("@    1) Have you entered the password when sediTWRP booted? DO IT!");
+								ui_print("@    2) Do you use Clockworkmod Recovery? USE sediTWRP!!!");
+								ui_print("@    3) If you loosed your enc password wipe /sdcard in sediTWRP and re-try!");
+								abort()
+						else
+								ui_print("@      ... sucessfully mounted encrypted /sdcard partition");
+						endif;
+				else
+						ui_print("@    ... /sdcard partition not encrypted and not mountable! ABORTED TO AVOID DATA LOSS!");
+						ui_print("@    1) Have you entered the enc password when sediTWRP booted? DO IT!");
+						ui_print("@    2) Do you use Clockworkmod Recovery? USE sediTWRP!!!");
+						ui_print("@    3) wipe /sdcard (all your settings getting lost!) in sediTWRP and re-try!");
+						abort()				
+				endif;
+		endif;
+	else
+		ui_print("@  [*] ... sucessfully mounted /sdcard partition");
+	endif;
+	if run_program("/sbin/busybox", "ls", "/sdcard/.sediROM/dir-moved-2-preload.txt") == 0 
+	then
+		if run_program("/sbin/busybox", "rm", "-r", "/sdcard/.sediROM/dir-moved-2-preload.txt") != 0
+		then
+			ui_print("@  [*] ERROR deleting /sdcard/.sediROM/dir-moved-2-preload.txt! ABORTED!");
+			abort();
+		else
+			ui_print("@  [*] ... successfully wiped /sdcard/.sediROM/dir-moved-2-preload.txt");
+		endif;
+	else
+			ui_print("@  [*] ... no /sdcard/.sediROM");
+		    ui_print("@  [*] Preparing usage of sediROM dir...");
+		    run_program("/sbin/busybox", "mkdir", "-p", "/sdcard/.sediROM");			
+	endif;
+	if run_program("/sbin/busybox", "ls", "/sdcard/.sediROM/.initialized") == 0 
+	then
+		if run_program("/sbin/busybox", "rm", "-r", "/sdcard/.sediROM/.initialized") != 0
+		then
+			ui_print("@  [*] ERROR deleting /sdcard/.sediROM/.initialized! ABORTED!");
+			abort();
+		else
+			ui_print("@  [*] ... successfully wiped /sdcard/.sediROM/.initialized");
+		endif;
+	else
+			ui_print("@  [*] ... no /sdcard/.sediROM");
+	endif;
+	
+	# preparing default preload sediROM directory
+	if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p11", "/preload") != "0"
+	then
+		ui_print("@  [*] ... mounting /preload partition failed");
+		ui_print("@  [*] Please use the recommended wipe!");
+		abort()
+	else
+		ui_print("@  [*] ... sucessfully mounted /preload partition");
+	endif;
+	if run_program("/sbin/busybox", "ls", "/preload/.sediROM/dir-moved-2-preload.txt") == 0 
+	then
+		if run_program("/sbin/busybox", "rm", "-r", "/preload/.sediROM/dir-moved-2-preload.txt") != 0
+		then
+			ui_print("@  [*] ERROR deleting /preload/.sediROM/dir-moved-2-preload.txt! ABORTED!");
+			abort();
+		else
+			ui_print("@  [*] ... successfully wiped /preload/.sediROM/dir-moved-2-preload.txt");
+			ui_print("@  [*] Preparing usage of /preload...");
+			run_program("/sbin/busybox", "mkdir", "-p", "/preload/.sediROM");			
+		endif;
+	else
+			ui_print("@  [*] ... no /preload/.sediROM/dir-moved-2-preload.txt");
+	endif;
+    if run_program("/sbin/busybox", "ls", "/preload/.sediROM/.initialized") == 0 
+	then
+		if run_program("/sbin/busybox", "rm", "-r", "/preload/.sediROM/.initialized") != 0
+		then
+			ui_print("@  [*] ERROR deleting /preload/.sediROM/.initialized! ABORTED!");
+			abort();
+		else
+			ui_print("@  [*] ... successfully wiped /preload/.sediROM/.initialized");
+		endif;
+	else
+			ui_print("@  [*] ... no /preload/.sediROM/.initialized");
+	endif;
+	
+	# app directory
+	if run_program("/sbin/busybox", "ls", "/preload/system/app") == 0 
+	then
+		if run_program("/sbin/busybox", "rm", "-r", "/preload/system/app") != 0
+		then
+			ui_print("@  [*] ERROR wiping /preload/system/app! ABORTED!");
+			abort();
+		else
+			ui_print("@  [*] ... successfully wiped /preload/system/app");
+			ui_print("@  [*] Preparing usage of /preload...");
+			run_program("/sbin/busybox", "mkdir", "-p", "/preload/system/app");			
+		endif;
+	else
+			ui_print("@  [*] ... no /preload/system/app");
+	endif;
+	
+	# wipe dalvik cache
+	  if run_program("/sbin/busybox", "ls", "/data/dalvik-cache") == 0
+	  then
+	  	if run_program("/sbin/busybox", "rm", "-r", "/data/dalvik-cache") != 0
+		then
+			ui_print("@  [*] ERROR wiping dalvik-cache! ABORTED!");
+			abort();
+		else
+			ui_print("@  [*] ... sucessfully wiped dalvik cache");
+	  	endif;
+	  else
+	  		ui_print("@  [*] ... skipped already deleted dalvik cache!");
+	  endif;
+
 	ui_print("@  [**] /cache partition will be formatted now..");
 	if run_program("/tmp/sedi_mke2fs", "-m1", "-T", "ext4", "/dev/block/mmcblk0p3") != "0"
 		then
@@ -217,42 +480,8 @@ then
 				else
 					ui_print("@      ... sucessfully mounted /system partition");
 			endif;
-	endif;
-	
-	if run_program("/sbin/busybox", "mount", "-t", "auto", "/dev/block/mmcblk0p11", "/preload") != "0"
-	then
-		ui_print("@  [*] ... mounting /preload partition failed");
-		ui_print("@  [*] Please use the recommended wipe!");
-		abort()
-	else
-		ui_print("@  [*] ... sucessfully mounted /preload partition");
-	endif;  
-	if run_program("/sbin/busybox", "ls", "/preload/system/app") == 0 
-	then
-		if run_program("/sbin/busybox", "rm", "-r", "/preload/system/app") != 0
-		then
-			ui_print("@  [*] ERROR partly-wiping /preload! ABORTED!");
-			abort();
-		else
-			ui_print("@  [*] ... successfully partly-wiped /preload");
-			ui_print("@  [*] Preparing usage of /preload...");
-			run_program("/sbin/busybox", "mkdir", "-p", "/preload/system/app");			
-		endif;
-	else
-			ui_print("@  [*] ... leaving /preload untouched");
-	endif;
-	  if run_program("/sbin/busybox", "ls", "/data/dalvik-cache") == 0
-	  then
-	  	if run_program("/sbin/busybox", "rm", "-r", "/data/dalvik-cache") != 0
-		then
-			ui_print("@  [*] ERROR wiping dalvik-cache! ABORTED!");
-			abort();
-		else
-			ui_print("@  [*] ... sucessfully wiped dalvik cache");
-	  	endif;
-	  else
-	  		ui_print("@  [*] ... skipped already deleted dalvik cache!");
-	  endif;
+	endif;	  
+	  
 endif;
 
 
@@ -390,7 +619,7 @@ if
 	  package_extract_dir("customize/ESFileExplorer/data", "/data");
 	endif;
 if
-	  file_getprop("/tmp/aroma/addapps.prop","item.1.2") == "1"
+	  file_getprop("/tmp/aroma/addapps.prop","item.1.2") == "1" || (file_getprop("/tmp/aroma/features.prop","item.7.2") == "1")
 	then
 	  ui_print("@  Installing Google Chrome...");
 	  package_extract_dir("customize/Browser/Chrome/system", "/system");
@@ -432,6 +661,13 @@ if
 	  ui_print("@  Installing QuickPic...");
 	  package_extract_dir("customize/QuickPic/system", "/system");
 	endif;
+if
+	  file_getprop("/tmp/aroma/addapps.prop","item.1.9") == "1"
+	then
+	  ui_print("@  Installing Ghostery Browser...");
+	  package_extract_dir("customize/Browser/ghostery/system", "/system");
+	endif;
+
 
 ui_print("@  [*] Installing Features...");	
 
@@ -572,7 +808,9 @@ if
 	  package_extract_dir("customize/Tools/Connectbot/system", "/system");
   	  #set_perm_recursive(1000, 1000, 0757, 0757, "/data/data/org.connectbot");
 	endif;	
-	
+
+ui_print("@  Installing Terminal app...");
+package_extract_dir("customize/Tools/Terminal/system", "/system");
 	
 ui_print("@  [*] Tweaking system...");
 if
@@ -582,7 +820,6 @@ if
 	  ui_print("@  Enabling shutdown scripts...");
 	  package_extract_dir("customize/Choice_BTfix/system", "/system");
 	  package_extract_dir("customize/Tweak_ShutdownScripts/system", "/system");
-	  set_perm(0, 0, 0755, "/system/etc/init.d/00sediROM_tweaks");
 	  set_perm(0, 0, 0755, "/system/etc/shutdown/sediROM_btfix");	  
 	  ui_print("@  Setting SystemScriptsExecutor permissions...");
 	  set_perm(0, 0, 6755, "/system/bin/SystemScriptsExecutor");
@@ -883,60 +1120,133 @@ run_program("/system/xbin/busybox", "--install", "-s", "/system/xbin");
 
 set_progress(0.82);
 
+# Root or not root that is the question...
+# root will be done by the original supersu installer script coming from
+# http://download.chainfire.eu/supersu
+# and unrooting is based on the removal part within plus some extras by me, xdajog.
 if
     file_getprop("/tmp/aroma/root.prop","selected.1") == "1"
     then
-	ui_print("@  [*] Activating ROOT...");
-	package_extract_dir("customize/ROOT/system", "/system");
-	package_extract_dir("customize/ROOT/sufiles", "/tmp");
-	
-	# supersu related:
-	run_program("/sbin/busybox", "mkdir", "-p", "/system/bin/.ext");
-	set_perm(0, 0, 0777, "/system/bin/.ext");
-	run_program("/sbin/busybox", "cp", "/tmp/su" ,"/system/bin/.ext/.su");
-    set_perm(0, 0, 06755, "/system/bin/.ext/.su");
-	run_program("/sbin/busybox", "touch", "-t", "201412240000", "/system/bin/.ext/.su");
-	
-    set_perm(0, 0, 0755, "/system/etc/install-recovery.sh");
-	symlink("/system/etc/install-recovery.sh", "/system/bin/install-recovery.sh");
-	set_perm(0, 0, 0744, "/system/etc/init.d/99SuperSUDaemon");
-	
-    # dutta or supersu:
-	run_program("/sbin/busybox", "cp", "/tmp/su" ,"/system/xbin/daemonsu");
-	set_perm(0, 0, 0755, "/system/xbin/daemonsu");
+		ui_print("@  [*] Activating ROOT...");
+		package_extract_dir("customize/ROOT", "/tmp/ROOT");
+		run_program("/sbin/sh", "/tmp/ROOT/supersu_installer.sh");
+		run_program("/system/xbin/busybox", "rm", "-r", "/tmp/ROOT");
 
-	run_program("/sbin/busybox", "cp", "/tmp/su" ,"/system/xbin/su");
-	set_perm(0, 0, 06755, "/system/xbin/su");
-	run_program("/sbin/busybox", "touch", "-t", "201412240000", "/system/xbin/su");
-	symlink("/system/xbin/su", "/system/bin/su");
+		#	package_extract_dir("customize/ROOT/system", "/system");
+		#	package_extract_dir("customize/ROOT/sufiles", "/tmp");
+		#	
+		#	# supersu related:
+		#	run_program("/sbin/busybox", "mkdir", "-p", "/system/bin/.ext");
+		#	set_perm(0, 0, 0777, "/system/bin/.ext");
+		#	run_program("/sbin/busybox", "cp", "/tmp/su" ,"/system/bin/.ext/.su");
+		#    set_perm(0, 0, 06755, "/system/bin/.ext/.su");
+		#	run_program("/sbin/busybox", "touch", "-t", "201412240000", "/system/bin/.ext/.su");
+		#	
+		#    set_perm(0, 0, 0755, "/system/etc/install-recovery.sh");
+		#	symlink("/system/etc/install-recovery.sh", "/system/bin/install-recovery.sh");
+		#	set_perm(0, 0, 0744, "/system/etc/init.d/99SuperSUDaemon");
+		#	
+		#    # dutta or supersu:
+		#	run_program("/sbin/busybox", "cp", "/tmp/su" ,"/system/xbin/daemonsu");
+		#	set_perm(0, 0, 0755, "/system/xbin/daemonsu");
+		#
+		#	run_program("/sbin/busybox", "cp", "/tmp/su" ,"/system/xbin/su");
+		#	set_perm(0, 0, 06755, "/system/xbin/su");
+		#	run_program("/sbin/busybox", "touch", "-t", "201412240000", "/system/xbin/su");
+		#	symlink("/system/xbin/su", "/system/bin/su");
+		#
+		#    run_program("/sbin/busybox", "cp", "/tmp/reboot" ,"/system/xbin/reboot");
+		#	set_perm(0, 0, 06755, "/system/xbin/reboot");
+		#	symlink("/system/xbin/reboot", "/system/bin/reboot");
+		#	run_program("/sbin/busybox", "touch", "-t", "201412240000", "/system/app/Superuser.apk");
+		#	set_perm(0, 0, 06644, "/system/app/Superuser.apk");
+		#	
+		#	set_perm(0, 0, 06644, "/system/etc/.installed_su_daemon");
+		#	
+		#	run_program("/system/xbin/su", "--install");
 
-    run_program("/sbin/busybox", "cp", "/tmp/reboot" ,"/system/xbin/reboot");
-	set_perm(0, 0, 06755, "/system/xbin/reboot");
-	symlink("/system/xbin/reboot", "/system/bin/reboot");
-	run_program("/sbin/busybox", "touch", "-t", "201412240000", "/system/app/Superuser.apk");
-	set_perm(0, 0, 06644, "/system/app/Superuser.apk");
-	
-	set_perm(0, 0, 06644, "/system/etc/.installed_su_daemon");
-	
-	run_program("/system/xbin/su", "--install");
 else
-	ui_print("@  [*] NO-root / UN-Root!");
-	delete("/system/app/Superuser.apk");
-	delete("/system/app/com.koushikdutta.superuser.apk");
-	delete("/system/bin/su");
-	delete("/system/xbin/su");
-	delete("/system/xbin/daemonsu");
-	delete("/system/etc/.installed_su_daemon");
-	delete("/system/etc/init.d/99SuperSUDaemon");
-    delete("/system/bin/install-recovery.sh");
-    delete("/system/etc/install-recovery.sh");
-    delete("/system/bin/.ext/.su");
-    delete("/data/dalvik-cache/*[Ss]uper[Uu]ser*");
-    delete("/data/dalvik-cache/*[Ss]uper[Ss][Uu]*");
-	run_program("/sbin/busybox", "rm", "-r", "/data/data/[Ss]uper[Ss][Uu]*");
-	run_program("/sbin/busybox", "rm", "-r", "/data/data/com.koushikdutta.superuser");	
-    run_program("/sbin/busybox", "rm", "-r", "/system/app/[Ss]uper[Uu]ser*");
-    run_program("/sbin/busybox", "rm", "-r", "/system/app/[Ss]uper[Ss][Uu]*");
+		ui_print("@  [*] NO-root / UN-Root!");
+		delete("/system/app/Superuser.apk");
+		delete("/system/app/com.koushikdutta.superuser.apk");
+		delete("/system/bin/su");
+		delete("/system/xbin/su");
+		delete("/system/xbin/daemonsu");
+		delete("/system/etc/.installed_su_daemon");
+		delete("/system/etc/init.d/99SuperSUDaemon");
+		delete("/system/bin/install-recovery.sh");
+		delete("/system/etc/install-recovery.sh");
+		delete("/system/bin/.ext/.su");
+		delete("/data/dalvik-cache/*[Ss]uper[Uu]ser*");
+		delete("/data/dalvik-cache/*[Ss]uper[Ss][Uu]*");
+		# coming from supersu app:
+		delete("/system/bin/su");
+		delete("/system/xbin/su");
+		delete("/system/sbin/su");
+		delete("/vendor/sbin/su");
+		delete("/vendor/bin/su");
+		delete("/vendor/xbin/su");
+		delete("/system/xbin/daemonsu");
+		delete("/system/xbin/sugote");
+		delete("/system/xbin/sugote-mksh");
+		delete("/system/xbin/supolicy");
+		delete("/system/lib/libsupol.so");
+		delete("/system/lib64/libsupol.so");
+		delete("/system/bin/.ext/.su");
+		delete("/system/bin/install-recovery.sh");
+		delete("/system/etc/install-recovery.sh");
+		delete("/system/etc/init.d/99SuperSUDaemon");
+		delete("/system/etc/.installed_su_daemon");
+		delete("/system/app/Superuser.apk");
+		delete("/system/app/Superuser.odex");
+		delete("/system/app/SuperUser.apk");
+		delete("/system/app/SuperUser.odex");
+		delete("/system/app/superuser.apk");
+		delete("/system/app/superuser.odex");
+		delete("/system/app/Supersu.apk");
+		delete("/system/app/Supersu.odex");
+		delete("/system/app/SuperSU.apk");
+		delete("/system/app/SuperSU.odex");
+		delete("/system/app/supersu.apk");
+		delete("/system/app/supersu.odex");
+		delete("/system/app/VenomSuperUser.apk");
+		delete("/system/app/VenomSuperUser.odex");
+		delete("/data/dalvik-cache/*com.noshufou.android.su*");
+		delete("/data/dalvik-cache/*/*com.noshufou.android.su*");
+		delete("/data/dalvik-cache/*com.koushikdutta.superuser*");
+		delete("/data/dalvik-cache/*/*com.koushikdutta.superuser*");
+		delete("/data/dalvik-cache/*com.mgyun.shua.su*");
+		delete("/data/dalvik-cache/*/*com.mgyun.shua.su*");
+		delete("/data/dalvik-cache/*com.m0narx.su*");
+		delete("/data/dalvik-cache/*/*com.m0narx.su*");
+		delete("/data/dalvik-cache/*Superuser.apk*");
+		delete("/data/dalvik-cache/*/*Superuser.apk*");
+		delete("/data/dalvik-cache/*SuperUser.apk*");
+		delete("/data/dalvik-cache/*/*SuperUser.apk*");
+		delete("/data/dalvik-cache/*superuser.apk*");
+		delete("/data/dalvik-cache/*/*superuser.apk*");
+		delete("/data/dalvik-cache/*VenomSuperUser.apk*");
+		delete("/data/dalvik-cache/*/*VenomSuperUser.apk*");
+		delete("/data/dalvik-cache/*eu.chainfire.supersu*");
+		delete("/data/dalvik-cache/*/*eu.chainfire.supersu*");
+		delete("/data/dalvik-cache/*Supersu.apk*");
+		delete("/data/dalvik-cache/*/*Supersu.apk*");
+		delete("/data/dalvik-cache/*SuperSU.apk*");
+		delete("/data/dalvik-cache/*/*SuperSU.apk*");
+		delete("/data/dalvik-cache/*supersu.apk*");
+		delete("/data/dalvik-cache/*/*supersu.apk*");
+		delete("/data/dalvik-cache/*.oat");
+		delete("/data/app/com.noshufou.android.su*");
+		delete("/data/app/com.koushikdutta.superuser*");
+		delete("/data/app/com.mgyun.shua.su*");
+		delete("/data/app/com.m0narx.su*");
+		delete("/data/app/eu.chainfire.supersu-*");
+		delete("/data/app/eu.chainfire.supersu.apk");
+		run_program("/sbin/busybox", "rm", "-r", "/system/app/VenomSuperUser");
+		run_program("/sbin/busybox", "rm", "-r", "/data/data/[Ss]uper[Ss][Uu]*");
+		run_program("/sbin/busybox", "rm", "-r", "/data/data/com.koushikdutta.superuser");	
+		run_program("/sbin/busybox", "rm", "-r", "/system/app/[Ss]uper[Uu]ser*");
+		run_program("/sbin/busybox", "rm", "-r", "/system/app/[Ss]uper[Ss][Uu]*");
 endif;
 
 # ROOT / UNROOT FINISHED
@@ -946,6 +1256,7 @@ if
 	  file_getprop("/tmp/aroma/mods.prop","selected.1") == "1"
 	then
 	  ui_print("@  [*] Flashing xdajog's Stock UCLJ3 kernel...");
+	  run_program("/sbin/busybox", "rm", "/system/lib/modules/*");
 	  package_extract_dir("customize/Choice_Kernel/Stock/UCLJ3", "/tmp");
 	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
 	  run_program("/sbin/busybox", "dd", "if=/tmp/Stock_UCLJ3_boot_xdajog_build3.img", "of=/dev/block/mmcblk0p9");
@@ -956,6 +1267,7 @@ if
 	  file_getprop("/tmp/aroma/mods.prop","selected.1") == "2"
 	then
 	  ui_print("@  [*] Flashing pure Stock UCLJ3 Kernel...");
+	  run_program("/sbin/busybox", "rm", "/system/lib/modules/*");
 	  package_extract_dir("customize/Choice_Kernel/Stock/UCLJ3", "/tmp");
 	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
 	  run_program("/sbin/busybox", "dd", "if=/tmp/Stock_UCLJ3_boot.img", "of=/dev/block/mmcblk0p9");
@@ -966,6 +1278,7 @@ if
 	  file_getprop("/tmp/aroma/mods.prop","selected.1") == "3"
 	then
 	  ui_print("@  [*] Flashing pure Stock UCLH2 Kernel...");
+	  run_program("/sbin/busybox", "rm", "/system/lib/modules/*");
   	  package_extract_dir("customize/Choice_Kernel/Stock/UCLH2", "/tmp");
 	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
 	  run_program("/sbin/busybox", "dd", "if=/tmp/Stock_UCLH2_boot.img", "of=/dev/block/mmcblk0p9");
@@ -976,9 +1289,10 @@ if
       file_getprop("/tmp/aroma/mods.prop","selected.1") == "4"
     then
       ui_print("@  [*] Flashing sediKERNEL v1.0...");
+	  run_program("/sbin/busybox", "rm", "/system/lib/modules/*");
 	  package_extract_dir("customize/Choice_Kernel/sediKERNEL", "/tmp");
       run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
-      run_program("/sbin/busybox", "dd", "if=/tmp/ics_sediKERNEL_v1.0-build48_xdajog.img", "of=/dev/block/mmcblk0p9");
+      run_program("/sbin/busybox", "dd", "if=/tmp/ics_sediKERNEL_v1.0-build52_xdajog.img", "of=/dev/block/mmcblk0p9");
       delete("/tmp/*ernel*");
      run_program("/sbin/busybox", "sync");
     endif;	
@@ -986,6 +1300,7 @@ if
       file_getprop("/tmp/aroma/mods.prop","selected.1") == "5"
     then
       ui_print("@  [*] Flashing bubor's CM11 kernel...");
+	  run_program("/sbin/busybox", "rm", "/system/lib/modules/*");
 	  package_extract_dir("customize/Choice_Kernel/cyanogenmod", "/tmp");
       run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
       run_program("/sbin/busybox", "dd", "if=/tmp/cm11_3.1.10_g5997bf9_xdajog.img", "of=/dev/block/mmcblk0p9");
@@ -996,7 +1311,8 @@ if
       file_getprop("/tmp/aroma/mods.prop","selected.1") == "6"
     then
       ui_print("@  [*] Flashing LiteKernel bubor-r20150508...");
-	  package_extract_dir("customize/Choice_Kernel/litekernel/kernel", "/tmp");	  
+	  run_program("/sbin/busybox", "rm", "/system/lib/modules/*");
+	  package_extract_dir("customize/Choice_Kernel/litekernel/JB/kernel", "/tmp");	  
 	  package_extract_dir("customize/Choice_Kernel/litekernel/system", "/system");      
       run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
       run_program("/sbin/busybox", "dd", "if=/tmp/ics_LiteKernel_release-bubor-20150508_linaro_4.9.1-2014.04.img", "of=/dev/block/mmcblk0p9");
@@ -1007,9 +1323,9 @@ if
       file_getprop("/tmp/aroma/mods.prop","selected.1") == "7"
     then
       ui_print("@  [*] Flashing LiteKernel r20130222...");
-	  package_extract_dir("customize/Choice_Kernel/litekernel/kernel", "/tmp");	  
-	  #package_extract_dir("customize/Choice_Kernel/litekernel/system", "/system");      
-      run_program("/sbin/busybox", "rm", "/system/lib/modules/dhd.ko");
+	  run_program("/sbin/busybox", "rm", "/system/lib/modules/*");
+	  package_extract_dir("customize/Choice_Kernel/litekernel/JB/kernel", "/tmp");	  
+	  package_extract_dir("customize/Choice_Kernel/litekernel/system", "/system");      
       run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
       run_program("/sbin/busybox", "dd", "if=/tmp/ics_litekernel-r20130222_xdajog-17.img", "of=/dev/block/mmcblk0p9");
       delete("/tmp/*ernel*");
@@ -1019,7 +1335,8 @@ if
       file_getprop("/tmp/aroma/mods.prop","selected.1") == "8"
     then
       ui_print("@  [*] Flashing LiteKernel r20130221...");
-	  package_extract_dir("customize/Choice_Kernel/litekernel/kernel", "/tmp");	  
+	  run_program("/sbin/busybox", "rm", "/system/lib/modules/*");
+	  package_extract_dir("customize/Choice_Kernel/litekernel/JB/kernel", "/tmp");	  
 	  package_extract_dir("customize/Choice_Kernel/litekernel/system", "/system");      
       run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
       run_program("/sbin/busybox", "dd", "if=/tmp/ics_LiteKernel_release-20130221.img", "of=/dev/block/mmcblk0p9");
@@ -1030,7 +1347,8 @@ if
       file_getprop("/tmp/aroma/mods.prop","selected.1") == "9"
     then
       ui_print("@  [*] Flashing xdajog's LiteKernelv1.2.2_UV-noOC...");
-	  package_extract_dir("customize/Choice_Kernel/xdajog", "/tmp");
+	  run_program("/sbin/busybox", "rm", "/system/lib/modules/*");
+	  package_extract_dir("customize/Choice_Kernel/litekernel/v1.2.2/kernel", "/tmp");
 	  package_extract_dir("customize/Choice_Kernel/litekernel/system", "/system");      
       run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
       run_program("/sbin/busybox", "dd", "if=/tmp/ics1.2.2-LiteKernel-NoGPUOC-FCharge_xdajog.img", "of=/dev/block/mmcblk0p9");
@@ -1041,7 +1359,8 @@ if
       file_getprop("/tmp/aroma/mods.prop","selected.1") == "10"
     then
       ui_print("@  [*] Flashing LiteKernelv1.2.2_UV-gpuOC...");
-	  package_extract_dir("customize/Choice_Kernel/litekernel/kernel", "/tmp");
+	  run_program("/sbin/busybox", "rm", "/system/lib/modules/*");
+	  package_extract_dir("customize/Choice_Kernel/litekernel/v1.2.2/kernel", "/tmp");
 	  package_extract_dir("customize/Choice_Kernel/litekernel/system", "/system");      
       run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
       run_program("/sbin/busybox", "dd", "if=/tmp/ics1.2.2-LiteKernel-GPUOC-FCharge.img", "of=/dev/block/mmcblk0p9");
@@ -1052,11 +1371,12 @@ if
 	  file_getprop("/tmp/aroma/mods.prop","selected.1") == "11"
 	then
 	  ui_print("@  [*] Flashing LiteKernelv1.2.2_LR-0.9...");
+	  run_program("/sbin/busybox", "rm", "/system/lib/modules/*");
 	  package_extract_dir("customize/Choice_Kernel/litekernel/system", "/system");
-	  package_extract_dir("customize/Choice_Kernel/litekernel/kernel", "/tmp");
+	  package_extract_dir("customize/Choice_Kernel/litekernel/v1.2.2/kernel", "/tmp");
 	  run_program("/sbin/busybox", "dd", "if=/dev/zero", "of=/dev/block/mmcblk0p9");
-	  run_program("/sbin/busybox", "dd", "if=/tmp/LiteKernel_boot.img", "of=/dev/block/mmcblk0p9");
-      delete("/tmp/LiteKernel_boot.img");
+	  run_program("/sbin/busybox", "dd", "if=/tmp/ics1.2.2-LK_v1.2.2_LR-0.9.img", "of=/dev/block/mmcblk0p9");
+      delete("/tmp/ics1.2.2-LK_v1.2.2_LR-0.9.img");
       run_program("/sbin/busybox", "sync");
 	endif;
 

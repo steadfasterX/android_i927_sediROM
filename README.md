@@ -3,12 +3,15 @@
 (codenames: SGH-I927, i927)
 
 All scripts needed to run sediROM on the Cappy.
+Checkout the "TAGS" tab in github to find a specific sediROM release!
 
 Help & Support: 
+
     http://forum.xda-developers.com/showthread.php?t=2789727
 
     If you are not yet allowed to write / answer within the dev area go here instead:
     http://forum.xda-developers.com/showthread.php?t=2789119
+
 
 Flashing Guide:
 
