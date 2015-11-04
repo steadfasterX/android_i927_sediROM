@@ -64,8 +64,10 @@ ENABLE_LOG(){
     
     # set working dir according to the above result
     WRKDIR=$SEDIDIR/initd
+    BOOTLOG=$SEDIDIR/boot
     LOG=$WRKDIR/${0##*/}.log
     [ ! -d $WRKDIR ] && mkdir -p $WRKDIR
+    [ ! -d $BOOTLOG ] && mkdir -p $BOOTLOG
 }
 
 # self healing when system has crashed and leaving empty / zeroed xml files in place.
@@ -86,7 +88,7 @@ SELFHEALING_CHK(){
         FSIZE=$(/system/xbin/stat -c%s $fopen)
         if [ $? -eq 0 ];then
             if [ "x$FSIZE" -eq "x0" ];then
-                rm /cache/psallgetpid.debug /cache/psgetpid.debug /cache/lsofdata.debug /cache/psall.debug
+                rm /cache/*.debug
                 echo "$(date +%D_%T) - sediROM($EXEBY): WARNING: CRASHED ZEROED XML DETECTED!!! Will be renamed to ensure we can continue!" >> /dev/kmsg
                 /system/xbin/ps -o pid,comm,args |grep -v grep >> /cache/psgetpid.debug
                 /system/xbin/lsof | grep "/data/system/" >> /cache/lsofdata.debug
