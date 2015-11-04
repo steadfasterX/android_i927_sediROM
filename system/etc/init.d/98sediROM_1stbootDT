@@ -3,6 +3,85 @@
 #
 # Author:   Thomas Fischer (xdajog) <mail@se-di.de>
 # Desc:		This code is part of sediROM (http://forum.xda-developers.com/showthread.php?t=2789727)
+# Version:  v2.5 (the first digit reflects the sediROM major version when this file has been created/changed/modified)
+#
+# License:  This code is licensed under the Creative Commons License CC BY-SA 4.0.
+#
+# DISCLAIMER:
+# The following deed highlights only some of the key features and terms of the actual license.
+# It is NOT a license and has NO legal value. You should carefully review ALL of the terms and conditions of the actual
+# license before using the licensed material.
+#
+# Please check the following link for details and the full legal content:
+# http://creativecommons.org/licenses/by-sa/4.0/legalcode
+#
+#    You are free to:
+#
+#       Share — copy and redistribute the material in any medium or format
+#       Adapt — remix, transform, and build upon the material
+#
+#       for any purpose, even commercially.
+#       The licensor cannot revoke these freedoms as long as you follow the license terms.
+#
+#    Under the following terms:
+#
+#       Attribution:
+#          You must give appropriate credit, provide a link to the license, and indicate if changes were made.
+#          You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+#
+#       ShareAlike:
+#          If you remix, transform, or build upon the material, you must distribute your contributions under the same
+#          license as the original.
+#
+#############################################################################################################################
+
+echo "$(date +%D_%T) - sediROM($0): starting" >> /dev/kmsg
+
+# Indicator file will be added by shutdown script and that requires at least 1 clean shutdown.
+IFLAG=$SEDIDIR/.initialized
+
+# Load sediROM functions
+SFUNC=/system/etc/sediROM/init.func
+. $SFUNC
+if [ $? -ne 0];then
+    echo "$(date +%D_%T) - sediROM($0): ERROR - FUNCTION LIBRARY COULD NOT INCLUDED! ABORTED!" >> /dev/kmsg
+    exit 9
+else
+    echo "$(date +%D_%T) - sediROM($0): function library included successfully." >> /dev/kmsg
+fi
+
+# Check if we are encrypted and if we are wait until decrypted
+ENC_WAIT "$0"
+
+# wait until the sdcard is initialized
+SDCARD_WAIT "$0"
+
+# prepare log 
+ENABLE_LOG "$0"
+LOG="$?"
+
+echo "$(date +%D_%T) - sediROM: starting $0" > $LOG
+
+
+# starting sediROM first boot app when never initialized before!
+if [ ! -f "$IFLAG" ];then
+    RETIFLAG=$(test -f "$IFLAG")
+    echo "$(date +%D_%T) - sediROM($0): $IFLAG test was: $RETIFLAG (should be empty or 0)." >> /dev/kmsg
+    # enable bluetooth so /data/misc/bluetoothd/MAC-ADRESS gets created:
+    service call bluetooth 3
+    # disable bluetooth again
+    service call bluetooth 4
+    # start sediROM first boot app:
+    am start -n "de.secure_diversity.sedirom_boot/de.secure_diversity.sedirom_boot.sedirom_boot" -a android.intent.action.MAIN -c android.intent.category.LAUNCHER
+fi
+
+echo "$(date +%D_%T) - sediROM: $0 finished." >> $LOG
+echo "$(date +%D_%T) - sediROM($0): finished." >> /dev/kmsg
+#!/system/bin/sh
+#############################################################################################################################
+#
+# Author:   Thomas Fischer (xdajog) <mail@se-di.de>
+# Desc:		This code is part of sediROM (http://forum.xda-developers.com/showthread.php?t=2789727)
 # Version:  v2.23 (the first digit reflects the sediROM major version when this file has been created/changed/modified)
 #
 # License:  This code is licensed under the Creative Commons License CC BY-SA 4.0.
@@ -55,8 +134,11 @@ else
     echo "$(date +%D_%T) - sediROM($0): function library included successfully." >> /dev/kmsg
 fi
 
-# Wait until system is usable (decrypted and mounted)
-PARTITION_WAIT "$0"
+# Check if we are encrypted and if we are: wait until decrypted
+ENC_WAIT "$0"
+
+# wait until sdcard was initialized
+SDCARD_WAIT "$0"
 
 # setup work dir depending on if we have preload or not
 mount -oremount,rw /preload

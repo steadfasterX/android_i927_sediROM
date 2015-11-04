@@ -1,0 +1,203 @@
+#!/system/bin/sh
+#############################################################################################################################
+#
+# Author:   Thomas Fischer (xdajog) <mail@se-di.de>
+# Desc:         This code is part of sediROM (http://forum.xda-developers.com/showthread.php?t=2789727)
+# Version:  v2.0 (the first digit reflects the sediROM major version when this file has been created/changed/modified)
+#
+# License:  This code is licensed under the Creative Commons License CC BY-SA 4.0.
+#
+# DISCLAIMER:
+# The following deed highlights only some of the key features and terms of the actual license.
+# It is NOT a license and has NO legal value. You should carefully review ALL of the terms and conditions of the actual
+# license before using the licensed material.
+#
+# Please check the following link for details and the full legal content:
+# http://creativecommons.org/licenses/by-sa/4.0/legalcode
+#
+#    You are free to:
+#
+#       Share — copy and redistribute the material in any medium or format
+#       Adapt — remix, transform, and build upon the material
+#
+#       for any purpose, even commercially.
+#       The licensor cannot revoke these freedoms as long as you follow the license terms.
+#
+#    Under the following terms:
+#
+#       Attribution:
+#          You must give appropriate credit, provide a link to the license, and indicate if changes were made.
+#          You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+#
+#       ShareAlike:
+#          If you remix, transform, or build upon the material, you must distribute your contributions under the same
+#          license as the original.
+#
+#############################################################################################################################
+
+# preparing log path and file
+# returns a valid full log path
+ENABLE_LOG(){
+    #function stuff
+    EXEBY="$1"
+    FUNCNAME="ENABLE_LOG"
+    if [ -z "$EXEBY" ]; then
+        echo "$(date +%D_%T) - sediROM($FUNCNAME): WARNING: No caller ID specified! I don't know who has called me ($FUNCNAME)!" >> /dev/kmsg
+    else
+        echo "$(date +%D_%T) - sediROM: function $FUNCNAME called by $EXEBY" >> /dev/kmsg
+    fi
+
+    # default path where the config and log will be saved
+    SEDIDIR=/preload/.sediROM
+
+    # if we were not able to use preload as log storage we will use sdcard instead
+    SEDISDDIR=/sdcard/.sediROM # if we cannot mount /preload this is a fallback
+    INDIMOVED=$SEDISDDIR/dir-moved-2-preload.txt # indicator file to know if we are using preload or not
+    if [ ! -f "$INDIMOVED" ];then
+        SEDIDIR=$SEDISDDIR
+    fi
+    echo "$(date +%D_%T) - sediROM($EXEBY): initflag dir set to $SEDIDIR" >> /dev/kmsg
+    
+    IFLAG=$SEDIDIR/.initialized
+    
+    echo "$(date +%D_%T) - sediROM($EXEBY): log path check finished."  >> /dev/kmsg
+    
+    # set working dir according to the above result
+    WRKDIR=$SEDIDIR/initd
+    LOG=$WRKDIR/${0##*/}.log
+    [ ! -d $WRKDIR ] && mkdir -p $WRKDIR
+}
+
+# self healing when system has crashed and leaving empty / zeroed xml files in place.
+# those xmls preventing the boot process!!! DAMN shit. I'm so happy that I found the solution :)
+# it needs a mounted /system to have the correct stat cmd in place so ensure that you call this
+# function when you're sure /system is usable
+SELFHEALING_CHK(){
+    #function stuff
+    EXEBY="$1"
+    FUNCNAME="SELFHEALING_CHK"
+    if [ -z "$EXEBY" ]; then
+        echo "$(date +%D_%T) - sediROM($FUNCNAME): WARNING: No caller ID specified! I don't know who has called me ($FUNCNAME)!" >> /dev/kmsg
+    else
+        echo "$(date +%D_%T) - sediROM: function $FUNCNAME called by $EXEBY" >> /dev/kmsg
+    fi
+    
+    for fopen in $(/system/xbin/lsof | /system/xbin/egrep -o "/data/system/.*xml"); do
+        FSIZE=$(/system/xbin/stat -c%s $fopen)
+        if [ $? -eq 0 ];then
+            if [ "x$FSIZE" -eq "x0" ];then
+                rm /cache/psallgetpid.debug /cache/psgetpid.debug /cache/lsofdata.debug /cache/psall.debug
+                echo "$(date +%D_%T) - sediROM($EXEBY): WARNING: CRASHED ZEROED XML DETECTED!!! Will be renamed to ensure we can continue!" >> /dev/kmsg
+                /system/xbin/ps -o pid,comm,args |grep -v grep >> /cache/psgetpid.debug
+                /system/xbin/lsof | grep "/data/system/" >> /cache/lsofdata.debug
+                /system/xbin/lsof >> /cache/lsofdatafull.debug
+                mv $fopen ${fopen}_movedbysediROM && echo "$(date +%D_%T) - sediROM($EXEBY): moved $fopen to ${fopen}_movedbysediROM because it is a buggy xml!" >> /dev/kmsg
+                GETPID=$(/system/xbin/lsof |grep "$fopen"| egrep -o "^[[:digit:]]+" | tr -d "[[:space:]]")
+                if [ -z "$GETPID" ];then
+                    echo "$(date +%D_%T) - sediROM($EXEBY): Warning cannot detect process pid which is keeping the file lock!" >> /dev/kmsg
+                else
+                    kill -9 $GETPID
+                    if [ $? -eq 0 ];then
+                        echo "$(date +%D_%T) - sediROM($EXEBY): killed process which keeps the file lock ($GETPID) successfully" >> /dev/kmsg
+                    else
+                        echo "$(date +%D_%T) - sediROM($EXEBY): WARNING: KILLING PROCESS ($GETPID) WHICH KEEPS THE FILE LOCK FAILED!" >> /dev/kmsg
+                    fi
+                fi
+            fi
+        fi
+    done
+}
+
+# check for encryption and if encryypted wait until decrypted
+ENC_WAIT(){
+    #function stuff
+    EXEBY="$1"
+    FUNCNAME="ENC_WAIT"
+    if [ -z "$EXEBY" ]; then
+        echo "$(date +%D_%T) - sediROM($FUNCNAME): WARNING: No caller ID specified! I don't know who has called me ($FUNCNAME)!" >> /dev/kmsg
+    else
+        echo "$(date +%D_%T) - sediROM: function $FUNCNAME called by $EXEBY" >> /dev/kmsg
+    fi
+
+    ############################################################
+    # ensure that /data is not encrypted and if so we wait until it will
+    # be unlocked by the user
+    NOENCSTATE=$(getprop vold.post_fs_data_done)
+    ENCSTATE=$(getprop vold.decrypt)
+    
+    # ensure that system has booted completely
+    BOOTSTATE=$(getprop sys.boot_completed)
+    BOOTSTATEDEV=$(getprop dev.bootcomplete)
+    
+    if [ "x$NOENCSTATE" == "x1" ];then
+        # NOT encrypted
+        echo "$(date +%D_%T) - sediROM($EXEBY): noEncryption test was: $NOENCSTATE (1 = not encrypted)." >> /dev/kmsg
+        echo "$(date +%D_%T) - sediROM($EXEBY): skipping waiting for decryption." >> /dev/kmsg
+    else
+      COUNTER=0
+      while [ ! "$ENCSTATE" == "trigger_restart_framework" ];do
+        echo "$(date +%D_%T) - sediROM($EXEBY): /data (still) locked or sediROM is not fully initialized." >> /dev/kmsg
+        RETIFLAG=$(test -f "$IFLAG")
+        echo "$(date +%D_%T) - sediROM($EXEBY): iflag state was: > $RETIFLAG < (0 or empty = not initialized)." >> /dev/kmsg
+        echo "$(date +%D_%T) - sediROM($EXEBY): boot state was: $BOOTSTATE (1 = booting completed)." >> /dev/kmsg
+        echo "$(date +%D_%T) - sediROM($EXEBY): boot dev state was: $BOOTSTATEDEV (1 = booting completed)." >> /dev/kmsg
+        echo "$(date +%D_%T) - sediROM($EXEBY): Encryption test was: $ENCSTATE (should be trigger_restart_framework for proceeding)." >> /dev/kmsg
+        echo "$(date +%D_%T) - sediROM($EXEBY): noEncryption test was: $NOENCSTATE (0 or empty = encrypted)." >> /dev/kmsg
+        sleep 10s
+        # re-check states
+        if [ $COUNTER > 3 ];then
+            echo "$(date +%D_%T) - sediROM($EXEBY): WARNING 30s without any progress! This is unusual so we start the selfhealing check."  >> /dev/kmsg
+            SELFHEALING_CHK "$EXEBY"
+        else
+            COUNTER=$(($COUNTER + 1))
+        fi
+        ENCSTATE=$(getprop vold.decrypt)
+        BOOTSTATE=$(getprop sys.boot_completed)
+        BOOTSTATEDEV=$(getprop dev.bootcomplete)
+        NOENCSTATE=$(getprop vold.post_fs_data_done)
+      done
+    fi
+}
+
+# wait until the sdcard is initialized
+SDCARD_WAIT(){
+    #function stuff
+    EXEBY="$1"
+    FUNCNAME="SDCARD_WAIT"
+    if [ -z "$EXEBY" ]; then
+        echo "$(date +%D_%T) - sediROM($FUNCNAME): WARNING: No caller ID specified! I don't know who has called me ($FUNCNAME)!" >> /dev/kmsg
+    else
+        echo "$(date +%D_%T) - sediROM: function $FUNCNAME called by $EXEBY" >> /dev/kmsg
+    fi
+
+    # wait until sdcard was initialized
+    COUNTER=0
+    while [ ! -d "/sdcard/.sediROM" ];do 
+        echo "$(date +%D_%T) - sediROM($EXEBY): /sdcard not initialized. Re-Checking in 10s." >> /dev/kmsg
+        sleep 10s
+        if [ $COUNTER > 14 ];then
+            echo "$(date +%D_%T) - sediROM($EXEBY): WARNING 140s without any progress! This is unusual so we start the selfhealing check."  >> /dev/kmsg
+            SELFHEALING_CHK "$EXEBY"
+        else
+            COUNTER=$(($COUNTER + 1))
+        fi
+        SELFHEALING_CHK "$EXEBY"        
+    done
+    echo "$(date +%D_%T) - sediROM($EXEBY): /sdcard initialized." >> /dev/kmsg
+}
+
+# wait until system is fully usable. means decrypted and /sdcard and /data mounted
+PARTITION_WAIT(){
+    #function stuff
+    EXEBY="$1"
+    FUNCNAME="PARTITION_WAIT"
+    if [ -z "$EXEBY" ]; then
+        echo "$(date +%D_%T) - sediROM($FUNCNAME): WARNING: No caller ID specified! I don't know who has called me ($FUNCNAME)!" >> /dev/kmsg
+    else
+        echo "$(date +%D_%T) - sediROM: function $FUNCNAME called by $EXEBY" >> /dev/kmsg
+    fi
+    ENC_WAIT "$EXEBY"
+    SDCARD_WAIT "$EXEBY"
+    echo "$(date +%D_%T) - sediROM($EXEBY): all partitions usable now!" >> /dev/kmsg
+}
+
