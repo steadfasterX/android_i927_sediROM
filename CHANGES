@@ -1,5 +1,5 @@
 
-v2.0.63 -v2.0.1 (Release date: 2015-06-16)
+v2.0.64 -v2.0.1 (Release date: 2015-11-03)
 --------------------------------------------------
 Major Release
 
@@ -103,6 +103,9 @@ Chrome is VERY slow on our phone in comparison to other browsers (try to open se
 BACKUP Google Chrome before upgrading when you do not want to loose settings.
 If you want to continue using Chrome you can upgrade and at the end of the installer select "Start sediROM modify mode"
 and install Chrome directly after installation (Screen "Main Features" - Section "Tools"). Nevertheless you still need to restore your settings as they are lost.
+[*]Started to use a common function file for the init scripts in sediROM (/system/etc/sediROM/init.func)
+[*]Several new boot logs are written to /cache/*.debug which makes debugging easier (commit b053e738 and commit e3fe9332).
+After sediROM is booted fully up everything will be moved to: /preload/.sediROM/boot/.
 [/LIST]
 
 [U]Fixes[/U]
@@ -194,6 +197,14 @@ This is to avoid data loss e.g. when you have an encrypted device and not unlock
 - Easy installation description changed
 - "Recommended Wipe" renamed to "Clean install / Recommended Wipe"
 - "Partial Wipe" renamed to "Upgrade mode / Partial wipe"
+[*]fixes an issue where Android goes into a boot loop in rare circumstances (issue #11). In rare cases several XMLs will be zeroed out by Android when not shutdown cleanly.
+Those XML files still be there but they are empty! When Android boots up it tries to open those XMLs and as they are empty the whole boot process will hang!!!
+I fixed this by:
+- adding a new function which searches for all opened /data/system/.*xml files after a given period of time
+- after this time period a file size check will be made: if the open xml is 0 it will be renamed
+- when a renaming happened the parent process will be killed to ensure the boot process will not stop
+[*] moved the first boot detector to the near end of the boot process instead! That may fixes other issues as well regarding displaying the first boot app
+[*] better integration of the wait for system readiness while booting up (commit d0970abf6ec6c65af9999e2428b96fe293a55f17). 
 [/LIST]
 
 
