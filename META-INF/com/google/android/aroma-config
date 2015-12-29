@@ -99,6 +99,21 @@ fontresload( "1", "ttf/Roboto-Regular.ttf", "14" );
 # disable vibration (will work only in AROMA v2.70)
 #ini_set("vibrate", "0");
 
+# create efs timestamp and backup path
+if resexec("efsbakpath.sh") == "0"
+ then
+    setvar("EFSBAK",getvar("exec_buffer"))
+ else
+    setvar("EFSBAK","/sdcard/efs_sediROM_"+ini_get("rom_version"))
+endif;
+
+# write to tmp file which willbe read by updater-script:
+writetmpfile(
+	  "efsdata.prop",
+		"bakpath="+getvar("EFSBAK")
+);
+
+# welcome screen
 viewbox(
     "Welcome",
     "You are about to install/modify\n\n<b><#selectbg_g>"+
@@ -108,11 +123,10 @@ viewbox(
     "  AUTHOR\t: <b><#selectbg_g>"+ini_get("rom_author")+"</#></b>\n"+	
     "  VERSION\t: <b><#selectbg_g>"+ini_get("rom_version")+"</#></b>\n"+
     "  UPDATED\t: <b><#selectbg_g>"+ini_get("rom_date")+"</#></b>\n\n\n"+
-    "DO BOTH (the installer can NOT do that for you): \n\n"+
-    "1) NANDROID backup\n   (do NOT skip that step!)\n"+
-    "2) AND efs backup \n\n"+
-    "and do that BEFORE FLASHING and also when upgrading only!\n\n\n"+
-    "Press Next to continue the installation...",
+    "<b>Before</b> continuing do a <b>NANDROID</b> and a <b>EFS</b> backup!\n(do NOT skip these steps!)\n\n"+
+    "sediROM will create an <b>EFS(!)</b> backup automatically to:\n"+getvar("EFSBAK")+"\n<b>HINT:</b> "+
+	"sediROM will <b>not abort</b> when the EFS backup <b>fails</b> so check the output at the end or do an EFS backup manually!\n\n"+
+    "Press Next to continue",
     "@info"
 );
 
