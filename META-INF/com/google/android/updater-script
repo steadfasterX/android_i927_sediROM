@@ -962,7 +962,7 @@ endif;
 if
 	  file_getprop("/tmp/aroma/bootanimation.prop","selected.1") != "6"
 	then
-		# ensure that the choosen bootanimation will work for encrypted devices, too
+		# ensure that your bootanimation will work for encrypted devices, too
 		run_program("/sbin/busybox", "cp", "-f", "/data/local/bootanimation.zip", "/system/media/bootanimation-encrypted.zip");
 		ui_print("@  Set bootanim for encrypted devices, too");
 endif;
@@ -1199,8 +1199,10 @@ if
 		#	set_perm(0, 0, 06644, "/system/etc/.installed_su_daemon");
 		#	
 		#	run_program("/system/xbin/su", "--install");
-
-else
+endif;
+if
+    file_getprop("/tmp/aroma/root.prop","selected.1") == "2"
+    then
 		ui_print("@  [*] NO-root / UN-Root!");
 		delete("/system/app/Superuser.apk");
 		delete("/system/app/com.koushikdutta.superuser.apk");
