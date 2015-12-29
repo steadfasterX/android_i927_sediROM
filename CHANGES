@@ -106,6 +106,7 @@ and install Chrome directly after installation (Screen "Main Features" - Section
 [*]Started to use a common function file for the init scripts in sediROM (/system/etc/sediROM/init.func)
 [*]Several new boot logs are written to /cache/*.debug which makes debugging easier (commit b053e738 and commit e3fe9332).
 After sediROM is booted fully up everything will be moved to: /preload/.sediROM/boot/.
+[*]Added commandline aliases/shortcuts for remounting any mountpoint as read-write (remountrw) or read-only (remountro) - handled by commit 41fcc3c6.
 [/LIST]
 
 [U]Fixes[/U]

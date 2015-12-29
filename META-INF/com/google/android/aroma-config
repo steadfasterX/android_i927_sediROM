@@ -59,7 +59,9 @@
 ###
 #
 #
-# Aroma Guide: http://forum.xda-developers.com/showthread.php?t=2422457
+# Aroma Guides:
+# http://forum.xda-developers.com/showthread.php?t=1461712
+# http://forum.xda-developers.com/showthread.php?t=2422457
 #
 ########################################################################
 
@@ -67,10 +69,10 @@ calibrate("0.8429","51","0.9658", "9", "yes");
 ini_set("rom_name",             "sediROM");
 
 # workaround START because ini_get is buggy in Aroma #
-ini_set("rom_date",             "2015-06-16");
+ini_set("rom_date",             "2015-12-29");
 writetmpfile(
 	   "build.repl",
-					  "buildversion=v2.0.63"
+					  "buildversion=v2.0.68"
 );
 #so to have both the getpropfile and the ini setting I use here ini_set, too:
 ini_set("rom_version",			file_getprop("/tmp/aroma/build.repl","buildversion"));
@@ -97,6 +99,21 @@ fontresload( "1", "ttf/Roboto-Regular.ttf", "14" );
 # disable vibration (will work only in AROMA v2.70)
 #ini_set("vibrate", "0");
 
+# create efs timestamp and backup path
+if resexec("efsbakpath.sh") == "0"
+ then
+    setvar("EFSBAK",getvar("exec_buffer"))
+ else
+    setvar("EFSBAK","/sdcard/efs_sediROM_"+ini_get("rom_version"))
+endif;
+
+# write to tmp file which willbe read by updater-script:
+writetmpfile(
+	  "efsdata.prop",
+		"bakpath="+getvar("EFSBAK")
+);
+
+# welcome screen
 viewbox(
     "Welcome",
     "You are about to install/modify\n\n<b><#selectbg_g>"+
@@ -106,11 +123,10 @@ viewbox(
     "  AUTHOR\t: <b><#selectbg_g>"+ini_get("rom_author")+"</#></b>\n"+	
     "  VERSION\t: <b><#selectbg_g>"+ini_get("rom_version")+"</#></b>\n"+
     "  UPDATED\t: <b><#selectbg_g>"+ini_get("rom_date")+"</#></b>\n\n\n"+
-    "DO BOTH (the installer can NOT do that for you): \n\n"+
-    "1) NANDROID backup\n   (do NOT skip that step!)\n"+
-    "2) AND efs backup \n\n"+
-    "and do that BEFORE FLASHING and also when upgrading only!\n\n\n"+
-    "Press Next to continue the installation...",
+    "<b>Before</b> continuing do a <b>NANDROID</b> and a <b>EFS</b> backup!\n(do NOT skip these steps!)\n\n"+
+    "sediROM will create an <b>EFS(!)</b> backup automatically to:\n"+getvar("EFSBAK")+"\n<b>HINT:</b> "+
+	"sediROM will <b>not abort</b> when the EFS backup <b>fails</b> so check the output at the end or do an EFS backup manually!\n\n"+
+    "Press Next to continue",
     "@info"
 );
 
@@ -325,10 +341,11 @@ if prop("type.prop","selected") == "1" then
 					"Bootanimations",                   "",2,           #-- Group 1. key = "selected.1"
 					"LiteROM Bootanimation",          	"",0,		#-- selected.1 = 1
 					"Android Minimal",                  "",0,			#-- selected.1 = 2
-					"Android White Particles",          "Recommended: A nice looking Android animation",1,			#-- selected.1 = 3
+					"Android White Particles",          "A nice looking Android animation",0,			#-- selected.1 = 3
 					"Win7Nexus",   						"",0,			#-- selected.1 = 4
-					"Android Green Particles",          "Recommended: An amazing green boot logo",0,			#-- selected.1 = 5
-					"AOSP Default",   				"",0			#-- selected.1 = 6
+					"Android Green Particles",          "An amazing green boot logo",0,			#-- selected.1 = 5
+					"AOSP Default",   					"",0,			#-- selected.1 = 6
+					"sediROM - NSA",   						"A funny NSA boot animation",1			#-- selected.1 = 7
 		);
 		
 
@@ -351,7 +368,7 @@ endif;
 # Usage: goto("aroma_installer_modmenu_pos");
 gotolabel("aroma_installer_modmenu_pos");
 
-# check if we coming from the finished installer:
+# check if we're coming from a finished installer:
 if getvar("goto_modmenu")=="1"
 then
 	   viewbox(
@@ -398,6 +415,26 @@ endif;
 ####################################################################################################################
 if prop("type.prop","selected") == "2"
 then
+
+	   #####
+	   # clean up first:
+	   run_program("/sbin/busybox", "rm",
+		   "/tmp/aroma/root.prop",
+		   "/tmp/aroma/wipe.prop",
+		   "/tmp/aroma/systemcore.prop",
+		   "/tmp/aroma/btfix.prop",
+		   "/tmp/aroma/fixpermissions.prop",
+		   "/tmp/aroma/apps.prop",
+		   "/tmp/aroma/addapps.prop",
+		   "/tmp/aroma/mods.prop",
+		   "/tmp/aroma/radio.prop",
+		   "/tmp/aroma/gps.prop",
+		   "/tmp/aroma/gpsregion.prop",
+		   "/tmp/aroma/utils.prop",
+		   "/tmp/aroma/features.prop",
+		   "/tmp/aroma/bootanimation.prop",
+		   "/tmp/aroma/tweaks.prop",
+		   "/tmp/aroma/audio.prop");
 
 	writetmpfile(
 		  "wipe.prop",
@@ -447,7 +484,7 @@ then
 			"item.1.8=0\n"+
 			"item.1.9=0\n"
 	);
-
+		
 	selectbox(
 				"Enterprise Mode",
 				"Please decide if you want to have sediROM rooted or not. To have sediROM un-rooted can be a requirement to run Enterprise Apps.",
@@ -455,11 +492,15 @@ then
 				"root.prop",
 					
 					"Root option",     "Please decide if you want to have sediROM rooted or not. To have sediROM un-rooted can be a requirement to run Enterprise Apps.",2,
-					"Rooted (Recommended)",      "Recommended/Required to run free root-apps like Titanium Backup etc.  This is the recommended mode when you do not need to fit a companies security policy or running special Enterprise apps which require an unrooted ROM.",1,	#selected.1
+					"Rooted (Recommended)",      "Recommended/Required to run free root-apps like Titanium Backup etc.  This is the recommended mode when you do not need to fit a companies security policy or running special Enterprise apps which require an unrooted ROM.",0,	#selected.1
 					"UN-Rooted (not fully tested yet)",     "Enterprise Apps and Users may need this mode in order to run or if you want to fit your companies security policy.",0      #selected.1
 					
 		);
-
+	# check if unmodified and if so change it to 999
+	if readtmpfile("root.prop") == "" then
+	  writetmpfile("root.prop","selected.1=999\n");
+	endif;
+	
 	selectbox(
 				"ROM Features",
 				"Please select features you wish to add",	  
@@ -473,8 +514,8 @@ then
 					"sediKERNEL_v1.0",  "xdajog's kernel (v3.1.10). L2_hsic patched. Based on CM11 by bubor. MTP working fine!",					0,  #-- selected.1 = 4
 					"CM11_bubor",  "Bubor's CM11 kernel (v3.1.10). L2_hsic patched. MTP IS NOT working!!!",											0,  #-- selected.1 = 5
 	                "LK_r20150508_bubor",  "LiteKernel L2_hsic patched. Made by bubor at 2015-05-08 with Linaro 4.9.1.",							0,  #-- selected.1 = 6
-	                "LK_r20130222_xdajog",  "4.2 Litekernel by thegreatergood migrated by xdajog. MTP IS NOT working!!!", 					0,  #-- selected.1 = 7					
-	                "LK_r20130221_xdajog",  "4.2 Litekernel by thegreatergood migrated by xdajog. Good battery life.", 					0,  #-- selected.1 = 8
+	                "LK_r20130222_xdajog",  "4.2 Litekernel by thegreatergood migrated by xdajog. MTP IS NOT working!!!", 							0,  #-- selected.1 = 7					
+	                "LK_r20130221_xdajog",  "4.2 Litekernel by thegreatergood migrated by xdajog. Good battery life.", 								0,  #-- selected.1 = 8
 	                "LK_v1.2.2_UV-noOC",  "Old LiteKernel not OverClocked and with UnderVoltage.",  												0,  #-- selected.1 = 9
 	                "LK_v1.2.2_UV-gpuOC",  "Old LiteKernel v1.2.2 GPU OverClocked and with UnderVoltage",  											0,  #-- selected.1 = 10     
 					"LK_v1.2.2_LR-0.9",  "Original old LiteRom-v0.9 Kernel.Tweaked - LiteKernel overclocked with UnderVoltage",  					0,  #-- selected.1 = 11
@@ -489,21 +530,25 @@ then
 
 					"BLN Support",       "",                                                                                             			2,  #-- Group 3. key = "selected.3"
 					"Stock",             "",                                                                      						 			0,  #-- selected.3 = 1
-					"Enable BLN",        "Enable Backlight support - you need a BLN app to use this!",                          					1,  #-- selected.3 = 2				
+					"Enable BLN",        "Enable Backlight support - you need a BLN app to use this!",                          					0,  #-- selected.3 = 2				
 					
 					"Sim Unlock",        "",                                                                                             			2,  #-- Group 5. key = "selected.5"
 					"Stock",             			  "Recommended for users with Factory Unlock",                      						 	0,  #-- selected.5 = 1
-					"Disable ICS Security Check",     "Disables Security Check in Rom, allows you to use modified nv_data.bin",                     1   #-- selected.5 = 2     
+					"Disable ICS Security Check",     "Disables Security Check in Rom, allows you to use modified nv_data.bin",                     0   #-- selected.5 = 2     
 		);
+	   # check if unmodified and if so change it to 999
+	   if readtmpfile("mods.prop") == "" then
+	     writetmpfile("mods.prop","selected.1=999\n"+"selected.2=999\n");
+	   endif;
 
-	if ((prop("mods.prop","selected.1") != "0") && (prop("mods.prop","selected.2") == "")) then
+	if ((prop("mods.prop","selected.1") != "999") && (prop("mods.prop","selected.2") == "999")) then
 		selectbox(
 					"Radio Options",
 					"You have choosen to (re)install a Kernel without a modem ("+prop("mods.prop","selected.2")+","+prop("mods.prop","selected.1")+") In order to get that fully work you need to reinstall a modem,too. Please choose one. ",
 					"@default",
 					"radio.prop",
 
-						"Modem",        "I force to re-install because otherwise after a Kernel update you won't get baseband...",                           2,  #-- Group 2. key = "selected.2"
+						"Modem",        "I force to re-install because otherwise after a Kernel update you maybe won't get baseband...",                           2,  #-- Group 2. key = "selected.2"
 						"UCLJ3 Modem",         "Latest available AT&T Modem",                                                            1,  #-- selected.2 = 1
 						"UCKL1 Modem",  	   "AT&T UCKL1 Modem",              														 0,  #-- selected.2 = 2
 						"UCLH2 Modem",  	   "AT&T UCLH2 Modem",              														 0,  #-- selected.2 = 3
@@ -514,7 +559,7 @@ then
 
 	checkbox(
 				"GPS Options",
-				"Please select apps you want to include or exclude below:",
+				"Please choose if you want to tune GPS:",
 				"@default",
 				"gps.prop",
 		 
@@ -524,6 +569,10 @@ then
 					"GPS Regions",     "Select a Region for faster GPS lock",0      #item.1.2 
 					
 		);
+	   # check if unmodified and if so change it to 999
+	   if readtmpfile("gps.prop") == "" then
+	     writetmpfile("gps.prop","item.1.2=999\n");
+	   endif;
 
 	if prop("gps.prop","item.1.2") == "1" then
 
@@ -536,7 +585,7 @@ then
 					"Region for GPS",       "",2,           #-- Group 1. key = "selected.1"
 					"Africa",          		"",0,			#-- selected.1 = 1
 					"Asia",          		"",0,			#-- selected.1 = 2
-					"Europe",               "",1,			#-- selected.1 = 3
+					"Europe",               "",0,			#-- selected.1 = 3
 					"North America",        "",0,			#-- selected.1 = 4
 					"Oceania",   			"",0,			#-- selected.1 = 5
 					"South America",   		"",0,			#-- selected.1 = 6
@@ -556,6 +605,11 @@ then
 					"Phone",     			"Phone mods",														2,		# Group 1
 					"Noise reduction Mod",  "If you want to disable noise reduction by default to fix echos.",	0      	# item.1.1 
 		);
+		
+	   # check if unmodified and if so change it to 999
+	   if readtmpfile("utils.prop") == "" then
+	     writetmpfile("utils.prop","item.1.1=999\n");
+	   endif;
 
 	checkbox(
 				"Main Features",
@@ -564,7 +618,7 @@ then
 				"features.prop",	  
 
 					"Camera",                    "",                                        	2, #-- Group 1. key = "selected.1"
-					"HD Camera ULTRA",         	"Most stable photo app in my case.",    		0, #-- selected.1 = 1
+					"HD Camera ULTRA",         	"A stable photo app.",    						0, #-- selected.1 = 1
 					"Open Camera",              "Most stable photo+video app in my case.",    	0, #-- selected.1 = 2
 					"Stock Camera",             "Gallery Button Doesn't work!",        			0, #-- selected.1 = 3
 					"ICS Camera",         		"May crash sometimes",             				0, #-- selected.1 = 4				
@@ -572,10 +626,10 @@ then
 
 					"Launcher",				        	"",	                               	2, #-- Group 2. key = "selected.2"
 					"ATOM Launcher",      				"An up-to-date version of the ATOM launcher. IMO it's one of the best and very stable.",                    0, #-- selected.2 = 1	
-					"Nova Launcher",		 			"(working but old)",        				         0, #-- selected.2 = 2 
-					"Apex Launcher",      				"(working but old)",                                 0, #-- selected.2 = 3
-					"Stock Launcher",      				"(working but old)",                                 0, #-- selected.2 = 4
-					"ADW Launcher",      				"(working but old)",                                 0, #-- selected.2 = 5	
+					"Nova Launcher",		 			"(working but old version)",        				         0, #-- selected.2 = 2 
+					"Apex Launcher",      				"(working but old version)",                                 0, #-- selected.2 = 3
+					"Stock Launcher",      				"(working but old version)",                                 0, #-- selected.2 = 4
+					"ADW Launcher",      				"(working but old version)",                                 0, #-- selected.2 = 5	
 
 					"Keyboard",          "",                                                2, #-- Group 3. key = "selected.3"
 					"Kii Keyboard (DON'T WORK!)",  "Very good keyboard. you can enable swipe in settings, too.",  					0, #-- selected.3 = 1		
@@ -590,17 +644,19 @@ then
 					
 					
 					"Themes",           "",                                                 2, #-- Group 5. key = "selected.5"
-					"LiteROM Theme",    "",                                                 1, #-- selected.5 = 1
+					"LiteROM Theme",    "",                                                 0, #-- selected.5 = 1
 					"Stock Theme",		"",                          						0, #-- selected.5 = 2
 
 					"Bluetooth",		"",	                               					2, #-- Group 6. key = "selected.6"
 					"Original Bluetooth",		 "Install/Reinstall Bluetooth stack. Use it when you have problems only.",      0, #-- selected.6 = 1 
 
 					"Tools",		"",	                               						2, #-- Group 7. key = "selected.7"
-					"Connectbot",		 "Install/Reinstall Connectbot terminal app.",      0, #-- selected.7 = 1
-					"Google Chrome",	 "Install/Reinstall Google Chrome Browser.",      	0  #-- selected.7 = 2  
+					"Connectbot",		 "Install/Reinstall Connectbot terminal app.",      0 #-- selected.7 = 1
 		);
-
+	   # check if unmodified and if so change it to 999
+	   if readtmpfile("features.prop") == "" then
+	     writetmpfile("features.prop","selected.1=999\n");
+	   endif;
 
 	selectbox(
 				"Select Bootanimation",
@@ -611,12 +667,16 @@ then
 					"Bootanimations",                   "",2,           #-- Group 1. key = "selected.1"
 					"LiteROM Bootanimation",          	"",0,			#-- selected.1 = 1
 					"Android Minimal",                  "",0,			#-- selected.1 = 2
-					"Android White Particles",          "",1,			#-- selected.1 = 3
+					"Android White Particles",          "",0,			#-- selected.1 = 3
 					"Win7Nexus",   						"",0,			#-- selected.1 = 4
 					"Android Green Particles",          "",0,			#-- selected.1 = 5
-					"AOSP Default",   				"",0			#-- selected.1 = 6
-
+					"AOSP Default",   					"",0,			#-- selected.1 = 6
+					"sediROM - NSA",   					"A funny NSA boot animation",0			#-- selected.1 = 7
 		);
+	   # check if unmodified and if so change it to 999
+	   if readtmpfile("bootanimation.prop") == "" then
+	     writetmpfile("bootanimation.prop","selected.1=999\n");
+	   endif;
 		
 	checkbox(
 				"Select Tweaks",
@@ -636,6 +696,10 @@ then
 					"Netforks Tweaks",  "Should boost Internet Speed. BUT: In my case this mod made problems. It results in bad wifi signal and eats battery..",0			  #item.1.9
 
 		);
+	   # check if unmodified and if so change it to 999
+	   if readtmpfile("tweaks.prop") == "" then
+	     writetmpfile("tweaks.prop","item.1.1=999\n");
+	   endif;
 		
 	checkbox(
 				"Select Audio Options",
@@ -647,6 +711,10 @@ then
 					"Samsung Music Player",         "",0, 								            #item.1.1
 					"Google Play Music ",           "",0 											#item.1.2
 		);
+	   # check if unmodified and if so change it to 999
+	   if readtmpfile("audio.prop") == "" then
+	     writetmpfile("audio.prop","item.1.1=999\n");
+	   endif;
 
 endif;
 ####################################################################################################################
