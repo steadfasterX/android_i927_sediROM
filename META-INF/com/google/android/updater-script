@@ -30,7 +30,10 @@
 #       ShareAlike:
 #          If you remix, transform, or build upon the material, you must distribute your contributions under the same
 #          license as the original.
-#
+#######
+# Updater-Script guides:
+# http://forum.xda-developers.com/showthread.php?t=2377695
+# 
 #############################################################################################################################
 
 ui_print("@");
@@ -43,6 +46,7 @@ unmount("/data");
 unmount("/cache");
 unmount("/preload");
 unmount("/sdcard");
+unmount("/efs");
 
 ui_print("@  [*] Preparing setup...");
 package_extract_dir("setup", "/tmp");
@@ -486,6 +490,16 @@ endif;
 
 
 set_progress(0.05);
+
+ui_print("@  [*] Creating EFS backup...");
+if run_program("/sbin/busybox", "dd", "if=/dev/block/mmcblk0p1", "of="+file_getprop("/tmp/aroma/efsdata.prop","bakpath")) != "0"
+	then
+		ui_print("@  [*] ... creating EFS backup failed! Nevertheless we will continue...");
+	else
+		ui_print("@  [*] ... creating EFS backup suceeded");
+endif;
+
+set_progress(0.10);
 if
 	  file_getprop("/tmp/aroma/systemcore.prop","item.1.1") == "1"
 	then
