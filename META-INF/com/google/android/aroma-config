@@ -345,6 +345,7 @@ if prop("type.prop","selected") == "1" then
 					"Win7Nexus",   						"",0,			#-- selected.1 = 4
 					"Android Green Particles",          "An amazing green boot logo",0,			#-- selected.1 = 5
 					"AOSP Default",   					"",0,			#-- selected.1 = 6
+					"sediROM - NSA",   						"A funny NSA boot animation",1			#-- selected.1 = 7
 		);
 		
 
@@ -630,8 +631,8 @@ then
 					"Android White Particles",          "",1,			#-- selected.1 = 3
 					"Win7Nexus",   						"",0,			#-- selected.1 = 4
 					"Android Green Particles",          "",0,			#-- selected.1 = 5
-					"AOSP Default",   				"",0			#-- selected.1 = 6
-
+					"AOSP Default",   					"",0,			#-- selected.1 = 6
+					"sediROM - NSA",   					"A funny NSA boot animation",0			#-- selected.1 = 7
 		);
 		
 	checkbox(
