@@ -59,7 +59,9 @@
 ###
 #
 #
-# Aroma Guide: http://forum.xda-developers.com/showthread.php?t=2422457
+# Aroma Guides:
+# http://forum.xda-developers.com/showthread.php?t=1461712
+# http://forum.xda-developers.com/showthread.php?t=2422457
 #
 ########################################################################
 
@@ -325,10 +327,10 @@ if prop("type.prop","selected") == "1" then
 					"Bootanimations",                   "",2,           #-- Group 1. key = "selected.1"
 					"LiteROM Bootanimation",          	"",0,		#-- selected.1 = 1
 					"Android Minimal",                  "",0,			#-- selected.1 = 2
-					"Android White Particles",          "Recommended: A nice looking Android animation",1,			#-- selected.1 = 3
+					"Android White Particles",          "A nice looking Android animation",0,			#-- selected.1 = 3
 					"Win7Nexus",   						"",0,			#-- selected.1 = 4
-					"Android Green Particles",          "Recommended: An amazing green boot logo",0,			#-- selected.1 = 5
-					"AOSP Default",   				"",0			#-- selected.1 = 6
+					"Android Green Particles",          "An amazing green boot logo",0,			#-- selected.1 = 5
+					"AOSP Default",   					"",0,			#-- selected.1 = 6
 		);
 		
 
@@ -351,7 +353,7 @@ endif;
 # Usage: goto("aroma_installer_modmenu_pos");
 gotolabel("aroma_installer_modmenu_pos");
 
-# check if we coming from the finished installer:
+# check if we're coming from a finished installer:
 if getvar("goto_modmenu")=="1"
 then
 	   viewbox(
@@ -473,8 +475,8 @@ then
 					"sediKERNEL_v1.0",  "xdajog's kernel (v3.1.10). L2_hsic patched. Based on CM11 by bubor. MTP working fine!",					0,  #-- selected.1 = 4
 					"CM11_bubor",  "Bubor's CM11 kernel (v3.1.10). L2_hsic patched. MTP IS NOT working!!!",											0,  #-- selected.1 = 5
 	                "LK_r20150508_bubor",  "LiteKernel L2_hsic patched. Made by bubor at 2015-05-08 with Linaro 4.9.1.",							0,  #-- selected.1 = 6
-	                "LK_r20130222_xdajog",  "4.2 Litekernel by thegreatergood migrated by xdajog. MTP IS NOT working!!!", 					0,  #-- selected.1 = 7					
-	                "LK_r20130221_xdajog",  "4.2 Litekernel by thegreatergood migrated by xdajog. Good battery life.", 					0,  #-- selected.1 = 8
+	                "LK_r20130222_xdajog",  "4.2 Litekernel by thegreatergood migrated by xdajog. MTP IS NOT working!!!", 							0,  #-- selected.1 = 7					
+	                "LK_r20130221_xdajog",  "4.2 Litekernel by thegreatergood migrated by xdajog. Good battery life.", 								0,  #-- selected.1 = 8
 	                "LK_v1.2.2_UV-noOC",  "Old LiteKernel not OverClocked and with UnderVoltage.",  												0,  #-- selected.1 = 9
 	                "LK_v1.2.2_UV-gpuOC",  "Old LiteKernel v1.2.2 GPU OverClocked and with UnderVoltage",  											0,  #-- selected.1 = 10     
 					"LK_v1.2.2_LR-0.9",  "Original old LiteRom-v0.9 Kernel.Tweaked - LiteKernel overclocked with UnderVoltage",  					0,  #-- selected.1 = 11
@@ -503,7 +505,7 @@ then
 					"@default",
 					"radio.prop",
 
-						"Modem",        "I force to re-install because otherwise after a Kernel update you won't get baseband...",                           2,  #-- Group 2. key = "selected.2"
+						"Modem",        "I force to re-install because otherwise after a Kernel update you maybe won't get baseband...",                           2,  #-- Group 2. key = "selected.2"
 						"UCLJ3 Modem",         "Latest available AT&T Modem",                                                            1,  #-- selected.2 = 1
 						"UCKL1 Modem",  	   "AT&T UCKL1 Modem",              														 0,  #-- selected.2 = 2
 						"UCLH2 Modem",  	   "AT&T UCLH2 Modem",              														 0,  #-- selected.2 = 3
@@ -514,7 +516,7 @@ then
 
 	checkbox(
 				"GPS Options",
-				"Please select apps you want to include or exclude below:",
+				"Please choose if you want to tune GPS:",
 				"@default",
 				"gps.prop",
 		 
@@ -564,7 +566,7 @@ then
 				"features.prop",	  
 
 					"Camera",                    "",                                        	2, #-- Group 1. key = "selected.1"
-					"HD Camera ULTRA",         	"Most stable photo app in my case.",    		0, #-- selected.1 = 1
+					"HD Camera ULTRA",         	"A stable photo app.",    						0, #-- selected.1 = 1
 					"Open Camera",              "Most stable photo+video app in my case.",    	0, #-- selected.1 = 2
 					"Stock Camera",             "Gallery Button Doesn't work!",        			0, #-- selected.1 = 3
 					"ICS Camera",         		"May crash sometimes",             				0, #-- selected.1 = 4				
@@ -572,10 +574,10 @@ then
 
 					"Launcher",				        	"",	                               	2, #-- Group 2. key = "selected.2"
 					"ATOM Launcher",      				"An up-to-date version of the ATOM launcher. IMO it's one of the best and very stable.",                    0, #-- selected.2 = 1	
-					"Nova Launcher",		 			"(working but old)",        				         0, #-- selected.2 = 2 
-					"Apex Launcher",      				"(working but old)",                                 0, #-- selected.2 = 3
-					"Stock Launcher",      				"(working but old)",                                 0, #-- selected.2 = 4
-					"ADW Launcher",      				"(working but old)",                                 0, #-- selected.2 = 5	
+					"Nova Launcher",		 			"(working but old version)",        				         0, #-- selected.2 = 2 
+					"Apex Launcher",      				"(working but old version)",                                 0, #-- selected.2 = 3
+					"Stock Launcher",      				"(working but old version)",                                 0, #-- selected.2 = 4
+					"ADW Launcher",      				"(working but old version)",                                 0, #-- selected.2 = 5	
 
 					"Keyboard",          "",                                                2, #-- Group 3. key = "selected.3"
 					"Kii Keyboard (DON'T WORK!)",  "Very good keyboard. you can enable swipe in settings, too.",  					0, #-- selected.3 = 1		
