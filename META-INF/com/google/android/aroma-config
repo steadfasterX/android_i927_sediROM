@@ -69,10 +69,10 @@ calibrate("0.8429","51","0.9658", "9", "yes");
 ini_set("rom_name",             "sediROM");
 
 # workaround START because ini_get is buggy in Aroma #
-ini_set("rom_date",             "2015-06-16");
+ini_set("rom_date",             "2015-12-29");
 writetmpfile(
 	   "build.repl",
-					  "buildversion=v2.0.63"
+					  "buildversion=v2.0.68"
 );
 #so to have both the getpropfile and the ini setting I use here ini_set, too:
 ini_set("rom_version",			file_getprop("/tmp/aroma/build.repl","buildversion"));
@@ -416,6 +416,26 @@ endif;
 if prop("type.prop","selected") == "2"
 then
 
+	   #####
+	   # clean up first:
+	   run_program("/sbin/busybox", "rm",
+		   "/tmp/aroma/root.prop",
+		   "/tmp/aroma/wipe.prop",
+		   "/tmp/aroma/systemcore.prop",
+		   "/tmp/aroma/btfix.prop",
+		   "/tmp/aroma/fixpermissions.prop",
+		   "/tmp/aroma/apps.prop",
+		   "/tmp/aroma/addapps.prop",
+		   "/tmp/aroma/mods.prop",
+		   "/tmp/aroma/radio.prop",
+		   "/tmp/aroma/gps.prop",
+		   "/tmp/aroma/gpsregion.prop",
+		   "/tmp/aroma/utils.prop",
+		   "/tmp/aroma/features.prop",
+		   "/tmp/aroma/bootanimation.prop",
+		   "/tmp/aroma/tweaks.prop",
+		   "/tmp/aroma/audio.prop");
+
 	writetmpfile(
 		  "wipe.prop",
 			"selected.1=3\n"
@@ -464,7 +484,7 @@ then
 			"item.1.8=0\n"+
 			"item.1.9=0\n"
 	);
-
+		
 	selectbox(
 				"Enterprise Mode",
 				"Please decide if you want to have sediROM rooted or not. To have sediROM un-rooted can be a requirement to run Enterprise Apps.",
@@ -472,11 +492,15 @@ then
 				"root.prop",
 					
 					"Root option",     "Please decide if you want to have sediROM rooted or not. To have sediROM un-rooted can be a requirement to run Enterprise Apps.",2,
-					"Rooted (Recommended)",      "Recommended/Required to run free root-apps like Titanium Backup etc.  This is the recommended mode when you do not need to fit a companies security policy or running special Enterprise apps which require an unrooted ROM.",1,	#selected.1
+					"Rooted (Recommended)",      "Recommended/Required to run free root-apps like Titanium Backup etc.  This is the recommended mode when you do not need to fit a companies security policy or running special Enterprise apps which require an unrooted ROM.",0,	#selected.1
 					"UN-Rooted (not fully tested yet)",     "Enterprise Apps and Users may need this mode in order to run or if you want to fit your companies security policy.",0      #selected.1
 					
 		);
-
+	# check if unmodified and if so change it to 999
+	if readtmpfile("root.prop") == "" then
+	  writetmpfile("root.prop","selected.1=999\n");
+	endif;
+	
 	selectbox(
 				"ROM Features",
 				"Please select features you wish to add",	  
@@ -506,14 +530,18 @@ then
 
 					"BLN Support",       "",                                                                                             			2,  #-- Group 3. key = "selected.3"
 					"Stock",             "",                                                                      						 			0,  #-- selected.3 = 1
-					"Enable BLN",        "Enable Backlight support - you need a BLN app to use this!",                          					1,  #-- selected.3 = 2				
+					"Enable BLN",        "Enable Backlight support - you need a BLN app to use this!",                          					0,  #-- selected.3 = 2				
 					
 					"Sim Unlock",        "",                                                                                             			2,  #-- Group 5. key = "selected.5"
 					"Stock",             			  "Recommended for users with Factory Unlock",                      						 	0,  #-- selected.5 = 1
-					"Disable ICS Security Check",     "Disables Security Check in Rom, allows you to use modified nv_data.bin",                     1   #-- selected.5 = 2     
+					"Disable ICS Security Check",     "Disables Security Check in Rom, allows you to use modified nv_data.bin",                     0   #-- selected.5 = 2     
 		);
+	   # check if unmodified and if so change it to 999
+	   if readtmpfile("mods.prop") == "" then
+	     writetmpfile("mods.prop","selected.1=999\n"+"selected.2=999\n");
+	   endif;
 
-	if ((prop("mods.prop","selected.1") != "0") && (prop("mods.prop","selected.2") == "")) then
+	if ((prop("mods.prop","selected.1") != "999") && (prop("mods.prop","selected.2") == "999")) then
 		selectbox(
 					"Radio Options",
 					"You have choosen to (re)install a Kernel without a modem ("+prop("mods.prop","selected.2")+","+prop("mods.prop","selected.1")+") In order to get that fully work you need to reinstall a modem,too. Please choose one. ",
@@ -541,6 +569,10 @@ then
 					"GPS Regions",     "Select a Region for faster GPS lock",0      #item.1.2 
 					
 		);
+	   # check if unmodified and if so change it to 999
+	   if readtmpfile("gps.prop") == "" then
+	     writetmpfile("gps.prop","item.1.2=999\n");
+	   endif;
 
 	if prop("gps.prop","item.1.2") == "1" then
 
@@ -553,7 +585,7 @@ then
 					"Region for GPS",       "",2,           #-- Group 1. key = "selected.1"
 					"Africa",          		"",0,			#-- selected.1 = 1
 					"Asia",          		"",0,			#-- selected.1 = 2
-					"Europe",               "",1,			#-- selected.1 = 3
+					"Europe",               "",0,			#-- selected.1 = 3
 					"North America",        "",0,			#-- selected.1 = 4
 					"Oceania",   			"",0,			#-- selected.1 = 5
 					"South America",   		"",0,			#-- selected.1 = 6
@@ -573,6 +605,11 @@ then
 					"Phone",     			"Phone mods",														2,		# Group 1
 					"Noise reduction Mod",  "If you want to disable noise reduction by default to fix echos.",	0      	# item.1.1 
 		);
+		
+	   # check if unmodified and if so change it to 999
+	   if readtmpfile("utils.prop") == "" then
+	     writetmpfile("utils.prop","item.1.1=999\n");
+	   endif;
 
 	checkbox(
 				"Main Features",
@@ -607,17 +644,19 @@ then
 					
 					
 					"Themes",           "",                                                 2, #-- Group 5. key = "selected.5"
-					"LiteROM Theme",    "",                                                 1, #-- selected.5 = 1
+					"LiteROM Theme",    "",                                                 0, #-- selected.5 = 1
 					"Stock Theme",		"",                          						0, #-- selected.5 = 2
 
 					"Bluetooth",		"",	                               					2, #-- Group 6. key = "selected.6"
 					"Original Bluetooth",		 "Install/Reinstall Bluetooth stack. Use it when you have problems only.",      0, #-- selected.6 = 1 
 
 					"Tools",		"",	                               						2, #-- Group 7. key = "selected.7"
-					"Connectbot",		 "Install/Reinstall Connectbot terminal app.",      0, #-- selected.7 = 1
-					"Google Chrome",	 "Install/Reinstall Google Chrome Browser.",      	0  #-- selected.7 = 2  
+					"Connectbot",		 "Install/Reinstall Connectbot terminal app.",      0 #-- selected.7 = 1
 		);
-
+	   # check if unmodified and if so change it to 999
+	   if readtmpfile("features.prop") == "" then
+	     writetmpfile("features.prop","selected.1=999\n");
+	   endif;
 
 	selectbox(
 				"Select Bootanimation",
@@ -628,12 +667,16 @@ then
 					"Bootanimations",                   "",2,           #-- Group 1. key = "selected.1"
 					"LiteROM Bootanimation",          	"",0,			#-- selected.1 = 1
 					"Android Minimal",                  "",0,			#-- selected.1 = 2
-					"Android White Particles",          "",1,			#-- selected.1 = 3
+					"Android White Particles",          "",0,			#-- selected.1 = 3
 					"Win7Nexus",   						"",0,			#-- selected.1 = 4
 					"Android Green Particles",          "",0,			#-- selected.1 = 5
 					"AOSP Default",   					"",0,			#-- selected.1 = 6
 					"sediROM - NSA",   					"A funny NSA boot animation",0			#-- selected.1 = 7
 		);
+	   # check if unmodified and if so change it to 999
+	   if readtmpfile("bootanimation.prop") == "" then
+	     writetmpfile("bootanimation.prop","selected.1=999\n");
+	   endif;
 		
 	checkbox(
 				"Select Tweaks",
@@ -653,6 +696,10 @@ then
 					"Netforks Tweaks",  "Should boost Internet Speed. BUT: In my case this mod made problems. It results in bad wifi signal and eats battery..",0			  #item.1.9
 
 		);
+	   # check if unmodified and if so change it to 999
+	   if readtmpfile("tweaks.prop") == "" then
+	     writetmpfile("tweaks.prop","item.1.1=999\n");
+	   endif;
 		
 	checkbox(
 				"Select Audio Options",
@@ -664,6 +711,10 @@ then
 					"Samsung Music Player",         "",0, 								            #item.1.1
 					"Google Play Music ",           "",0 											#item.1.2
 		);
+	   # check if unmodified and if so change it to 999
+	   if readtmpfile("audio.prop") == "" then
+	     writetmpfile("audio.prop","item.1.1=999\n");
+	   endif;
 
 endif;
 ####################################################################################################################
