@@ -9,6 +9,7 @@
 ANSW=undef
 LVERFILE=package_last-version.txt
 WORKDIR="../../PROJECT_sediROM"
+BDIR="$PWD"
 
 # check for vendor dev specification
 VENDEV="$1"
