@@ -3,7 +3,7 @@
 #
 # Author:   Thomas Fischer (xdajog) <mail@se-di.de>
 # Desc:		This code is part of sediROM (http://forum.xda-developers.com/showthread.php?t=2789727)
-# Version:  v2.23 (the first digit reflects the sediROM major version when this file has been created/changed/modified)
+# Version:  v2.24 (the first digit reflects the sediROM major version when this file has been created/changed/modified)
 #
 # License:  This code is licensed under the Creative Commons License CC BY-SA 4.0.
 #
@@ -139,15 +139,6 @@ chmod 644 /etc/group
 [ ! -L /storage/sdcard0 ] && ln -s /mnt/sdcard /storage/sdcard0                                                       
 [ ! -L /storage/sdcard1 ] && ln -s /mnt/sdcard/external_sd /storage/sdcard1 
 echo "$(date): added mount point compatibility for users coming from JB"  >> $LOG
-
-############################################################
-# Fix crappy Google Play Framework causing battery drain
-# Details:
-# http://forum.xda-developers.com/showpost.php?p=53881089
-# http://muzso.hu/2014/09/18/how-to-fix-the-partial-wakelock-problem-on-cyanogenmod-11-with-google-play-services-and-o
-#
-/system/xbin/sedi_fix-gplay-drain  >> $LOG                                
-echo "$(date): Initially disabling Google Play bullshit ended with errorcode: $?"  >> $LOG 
 
 ############################################################
 # remount as ro again at the end

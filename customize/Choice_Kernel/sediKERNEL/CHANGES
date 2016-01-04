@@ -1,7 +1,7 @@
 
 
 
-Changelog for *KERNEL* within sediKERNEL bootimage
+Changelog for **********KERNEL*********** within sediKERNEL bootimage
 ###############################################################################################
 
 all kernel related changes are tracked @github:
@@ -9,8 +9,14 @@ https://github.com/xdajog/kernel_samsung_i927/tree/sediKERNEL
 
 
 
-Changelog for *RAMDISK* within sediKERNEL bootimage
+Changelog for **********RAMDISK********** within sediKERNEL bootimage
 ###############################################################################################
+
+ics_sediKERNEL_v1.0-build53_xdajog (Release date: 2015-12-28)
+---------------------------------------------------------------------------
+- added cmdline from b50 again
+- Kernel still the same as in b50-52
+
 
 ics_sediKERNEL_v1.0-build52_xdajog (Release date: 2015-06-16)
 ---------------------------------------------------------------------------
