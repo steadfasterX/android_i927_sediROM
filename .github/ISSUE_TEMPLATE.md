@@ -2,7 +2,7 @@
 
 [ ] The issue is not answered by reading the [FAQ](http://forum.xda-developers.com/showpost.php?p=54075993&postcount=2)
 
-*Reported Version*
+**Reported Version**
 sediROM vX.x
 
 **Issue description:**
